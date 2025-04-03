@@ -17,10 +17,10 @@
 namespace ftxui {
 
 namespace {
-using Charset = std::array<std::string, 2>;  // NOLINT
+using Charset = std::array<std::string_view, 2>;  // NOLINT
 using Charsets = std::array<Charset, 6>;     // NOLINT
 // NOLINTNEXTLINE
-const Charsets charsets = {
+constexpr Charsets charsets = {
     Charset{"│", "─"},  // LIGHT
     Charset{"╏", "╍"},  // DASHED
     Charset{"┃", "━"},  // HEAVY
@@ -42,7 +42,7 @@ class Separator : public Node {
     for (int y = box_.y_min; y <= box_.y_max; ++y) {
       for (int x = box_.x_min; x <= box_.x_max; ++x) {
         Pixel& pixel = screen.PixelAt(x, y);
-        pixel.character = value_;
+        pixel.set_grapheme(value_, screen);
         pixel.automerge = true;
       }
     }
@@ -63,14 +63,12 @@ class SeparatorAuto : public Node {
   void Render(Screen& screen) override {
     const bool is_column = (box_.x_max == box_.x_min);
     const bool is_line = (box_.y_min == box_.y_max);
-
-    const std::string c =
-        charsets[style_][int(is_line && !is_column)];  // NOLINT
+    const auto c = charsets[style_][int(is_line && !is_column)];  // NOLINT
 
     for (int y = box_.y_min; y <= box_.y_max; ++y) {
       for (int x = box_.x_min; x <= box_.x_max; ++x) {
         Pixel& pixel = screen.PixelAt(x, y);
-        pixel.character = c;
+        pixel.set_grapheme(c, screen);
         pixel.automerge = true;
       }
     }

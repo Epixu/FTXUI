@@ -1171,7 +1171,7 @@ namespace ftxui {
 // one codepoint. Put the codepoint into |ucs|. Start at |start| and update
 // |end| to represent the beginning of the next byte to eat for consecutive
 // executions.
-bool EatCodePoint(const std::string& input,
+bool EatCodePoint(const std::string_view& input,
                   size_t start,
                   size_t* end,
                   uint32_t* ucs) {
@@ -1241,7 +1241,7 @@ bool EatCodePoint(const std::string& input,
 // one codepoint. Put the codepoint into |ucs|. Start at |start| and update
 // |end| to represent the beginning of the next byte to eat for consecutive
 // executions.
-bool EatCodePoint(const std::wstring& input,
+bool EatCodePoint(const std::wstring_view& input,
                   size_t start,
                   size_t* end,
                   uint32_t* ucs) {
@@ -1354,7 +1354,7 @@ int string_width(const std::string& input) {
   return width;
 }
 
-std::vector<std::string> Utf8ToGlyphs(const std::string& input) {
+std::vector<std::string> Utf8ToGlyphs(const std::string_view& input) {
   std::vector<std::string> out;
   out.reserve(input.size());
   size_t start = 0;
@@ -1366,7 +1366,7 @@ std::vector<std::string> Utf8ToGlyphs(const std::string& input) {
       continue;
     }
 
-    const std::string append = input.substr(start, end - start);
+    const auto append = input.substr(start, end - start);
     start = end;
 
     // Ignore control characters.
@@ -1385,13 +1385,13 @@ std::vector<std::string> Utf8ToGlyphs(const std::string& input) {
     // Fullwidth characters take two cells. The second is made of the empty
     // string to reserve the space the first is taking.
     if (IsFullWidth(codepoint)) {
-      out.push_back(append);
+      out.emplace_back(append);
       out.emplace_back("");
       continue;
     }
 
     // Normal characters:
-    out.push_back(append);
+    out.emplace_back(append);
   }
   return out;
 }

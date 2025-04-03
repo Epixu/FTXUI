@@ -150,7 +150,7 @@ struct TileEncoding {
 };
 
 // clang-format off
-const std::map<std::string, TileEncoding> tile_encoding = { // NOLINT
+const std::map<std::string_view, TileEncoding> tile_encoding = { // NOLINT
     {"─", {1, 0, 1, 0, 0}},
     {"━", {2, 0, 2, 0, 0}},
     {"╍", {2, 0, 2, 0, 0}},
@@ -302,7 +302,7 @@ std::map<B, A> InvertMap(const std::map<A, B> input) {
   return output;
 }
 
-const std::map<TileEncoding, std::string> tile_encoding_inverse =  // NOLINT
+const std::map<TileEncoding, std::string_view> tile_encoding_inverse =  // NOLINT
     InvertMap(tile_encoding);
 
 void UpgradeLeftRight(std::string& left, std::string& right) {
@@ -364,7 +364,7 @@ void UpgradeTopDown(std::string& top, std::string& down) {
 }
 
 bool ShouldAttemptAutoMerge(Pixel& pixel) {
-  return pixel.automerge && pixel.character.size() == 3;
+  return pixel.automerge && pixel.get_grapheme().size() == 3;
 }
 
 }  // namespace

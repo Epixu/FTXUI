@@ -17,7 +17,7 @@ namespace ftxui {
 
 namespace {
 // NOLINTNEXTLINE
-static std::string charset[] =
+static constexpr std::string_view charset[] =
 #if defined(FTXUI_MICROSOFT_TERMINAL_FALLBACK)
     // Microsoft's terminals often use fonts not handling the 8 unicode
     // characters for representing the whole graph. Fallback with less.
@@ -55,7 +55,7 @@ class Graph : public Node {
         const int yy = 2 * y;
         int i_1 = yy < height_1 ? 0 : yy == height_1 ? 3 : 6;  // NOLINT
         int i_2 = yy < height_2 ? 0 : yy == height_2 ? 1 : 2;  // NOLINT
-        screen.at(x, y) = charset[i_1 + i_2];                  // NOLINT
+        screen.PixelAt(x, y).set_grapheme(charset[i_1 + i_2], screen);                  // NOLINT
       }
     }
   }

@@ -7,7 +7,8 @@
 #include <memory>    // for allocator, make_shared, __shared_ptr_access
 #include <optional>  // for optional, nullopt
 #include <string>    // for basic_string, string
-#include <utility>   // for move
+#include <string_view>  // for string_view
+#include <utility>      // for move
 
 #include "ftxui/dom/elements.hpp"  // for unpack, Element, Decorator, BorderStyle, ROUNDED, borderStyled, Elements, DASHED, DOUBLE, EMPTY, HEAVY, LIGHT, border, borderDashed, borderDouble, borderEmpty, borderHeavy, borderLight, borderRounded, borderWith, window
 #include "ftxui/dom/node.hpp"      // for Node, Elements
@@ -19,10 +20,10 @@
 namespace ftxui {
 
 namespace {
-using Charset = std::array<std::string, 6>;  // NOLINT
+using Charset = std::array<std::string_view, 6>;  // NOLINT
 using Charsets = std::array<Charset, 6>;     // NOLINT
 // NOLINTNEXTLINE
-static Charsets simple_border_charset = {
+static constexpr Charsets simple_border_charset = {
     Charset{"┌", "┐", "└", "┘", "─", "│"},  // LIGHT
     Charset{"┏", "┓", "┗", "┛", "╍", "╏"},  // DASHED
     Charset{"┏", "┓", "┗", "┛", "━", "┃"},  // HEAVY
@@ -87,24 +88,24 @@ class Border : public Node {
       return;
     }
 
-    screen.at(box_.x_min, box_.y_min) = charset_[0];  // NOLINT
-    screen.at(box_.x_max, box_.y_min) = charset_[1];  // NOLINT
-    screen.at(box_.x_min, box_.y_max) = charset_[2];  // NOLINT
-    screen.at(box_.x_max, box_.y_max) = charset_[3];  // NOLINT
+    screen.PixelAt(box_.x_min, box_.y_min).set_grapheme(charset_[0], screen);  // NOLINT
+    screen.PixelAt(box_.x_max, box_.y_min).set_grapheme(charset_[1], screen);  // NOLINT
+    screen.PixelAt(box_.x_min, box_.y_max).set_grapheme(charset_[2], screen);  // NOLINT
+    screen.PixelAt(box_.x_max, box_.y_max).set_grapheme(charset_[3], screen);  // NOLINT
 
     for (int x = box_.x_min + 1; x < box_.x_max; ++x) {
       Pixel& p1 = screen.PixelAt(x, box_.y_min);
       Pixel& p2 = screen.PixelAt(x, box_.y_max);
-      p1.character = charset_[4];  // NOLINT
-      p2.character = charset_[4];  // NOLINT
+      p1.set_grapheme(charset_[4], screen);  // NOLINT
+      p2.set_grapheme(charset_[4], screen);  // NOLINT
       p1.automerge = true;
       p2.automerge = true;
     }
     for (int y = box_.y_min + 1; y < box_.y_max; ++y) {
       Pixel& p3 = screen.PixelAt(box_.x_min, y);
       Pixel& p4 = screen.PixelAt(box_.x_max, y);
-      p3.character = charset_[5];  // NOLINT
-      p4.character = charset_[5];  // NOLINT
+      p3.set_grapheme(charset_[5], screen);  // NOLINT
+      p4.set_grapheme(charset_[5], screen);  // NOLINT
       p3.automerge = true;
       p4.automerge = true;
     }
@@ -135,7 +136,7 @@ class BorderPixel : public Node {
       : Node(std::move(children)), pixel_(std::move(pixel)) {}
 
  private:
-  Pixel pixel_;
+  PixelStandalone pixel_;
 
   void ComputeRequirement() override {
     Node::ComputeRequirement();

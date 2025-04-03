@@ -67,7 +67,8 @@ class DBox : public Node {
           acc->background_color =
               Color::Blend(acc->background_color, pixel.background_color);
           acc->automerge = pixel.automerge || acc->automerge;
-          if (pixel.character.empty()) {
+
+          if (pixel.get_grapheme().empty()) {
             acc->foreground_color =
                 Color::Blend(acc->foreground_color, pixel.background_color);
           } else {
@@ -80,21 +81,22 @@ class DBox : public Node {
             acc->underlined_double = pixel.underlined_double;
             acc->strikethrough = pixel.strikethrough;
             acc->hyperlink = pixel.hyperlink;
-            acc->character = pixel.character;
+            acc->reuse_grapheme(pixel.get_grapheme()); // assumes that 'acc' and 'pixel' are in the same memory space! very important!
             acc->foreground_color = pixel.foreground_color;
           }
           ++acc;  // NOLINT
 
-          pixel = Pixel();
+          pixel.reset_fully();
         }
       }
     }
 
     // Render the accumulated pixels:
     Pixel* acc = pixels.data();
-    for (int x = 0; x < width; ++x) {
-      for (int y = 0; y < height; ++y) {
-        screen.PixelAt(x + box_.x_min, y + box_.y_min) = *acc++;  // NOLINT
+    for (int x = box_.x_min; x < width; ++x) {
+      for (int y = box_.y_min; y < height; ++y) {
+         //TODO just memcpy row by row?
+        screen.PixelAt(x, y) = *acc++;  // NOLINT
       }
     }
   }

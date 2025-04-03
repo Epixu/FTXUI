@@ -20,15 +20,15 @@
 
 namespace ftxui {
 
-struct Canvas {
+struct Canvas : Image {
  public:
   Canvas() = default;
   Canvas(int width, int height);
 
-  // Getters:
-  int width() const { return width_; }
-  int height() const { return height_; }
-  Pixel GetPixel(int x, int y) const;
+  // Getters: now coming from base
+  //int width() const { return width_; }
+  //int height() const { return height_; }
+  //Pixel GetPixel(int x, int y) const;
 
   using Stylizer = std::function<void(Pixel&)>;
 
@@ -76,24 +76,20 @@ struct Canvas {
   void DrawBlockEllipse(int x1, int y1, int r1, int r2, const Stylizer& s);
   void DrawBlockEllipse(int x1, int y1, int r1, int r2, const Color& color);
   void DrawBlockEllipseFilled(int x1, int y1, int r1, int r2);
-  void DrawBlockEllipseFilled(int x1,
-                              int y1,
-                              int r1,
-                              int r2,
+  void DrawBlockEllipseFilled(int x1, int y1,
+                              int r1, int r2,
                               const Stylizer& s);
-  void DrawBlockEllipseFilled(int x1,
-                              int y1,
-                              int r1,
-                              int r2,
+  void DrawBlockEllipseFilled(int x1, int y1,
+                              int r1, int r2,
                               const Color& color);
 
   // Draw using normal characters ----------------------------------------------
   // Draw using character of size 2x4 at position (x,y)
   // x is considered to be a multiple of 2.
   // y is considered to be a multiple of 4.
-  void DrawText(int x, int y, const std::string& value);
-  void DrawText(int x, int y, const std::string& value, const Color& color);
-  void DrawText(int x, int y, const std::string& value, const Stylizer& style);
+  void DrawText(int x, int y, const std::string_view& value);
+  void DrawText(int x, int y, const std::string_view& value, const Color& color);
+  void DrawText(int x, int y, const std::string_view& value, const Stylizer& style);
 
   // Draw using directly pixels or images --------------------------------------
   // x is considered to be a multiple of 2.
@@ -108,38 +104,23 @@ struct Canvas {
 
  private:
   bool IsIn(int x, int y) const {
-    return x >= 0 && x < width_ && y >= 0 && y < height_;
+    return x >= 0 && x < dimx_ && y >= 0 && y < dimy_;
   }
 
-  enum CellType {
-    kCell,     // Units of size 2x4
-    kBlock,    // Units of size 2x2
-    kBraille,  // Units of size 1x1
-  };
-
   struct Cell {
-    CellType type = kCell;
-    Pixel content;
+    enum {
+      kCell,     // Units of size 2x4
+      kBlock,    // Units of size 2x2
+      kBraille,  // Units of size 1x1
+    } type = kCell;
   };
 
-  struct XY {
-    int x;
-    int y;
-    bool operator==(const XY& other) const {
-      return x == other.x && y == other.y;
-    }
-  };
+  // Additional meta data - type of cell for each pixel
+  std::vector<Cell> cells_;
 
-  struct XYHash {
-    size_t operator()(const XY& xy) const {
-      constexpr size_t shift = 1024;
-      return size_t(xy.x) * shift + size_t(xy.y);
-    }
-  };
-
-  int width_ = 0;
-  int height_ = 0;
-  std::unordered_map<XY, Cell, XYHash> storage_;
+  // No point in using a map for indexing - lots of table overhead and cache unfriendliness
+  // just index linearly: i = x + y*width. nothing will ever be faster and friendlier than that, ever
+  //std::unordered_map<XY, Cell, XYHash> storage_;
 };
 
 }  // namespace ftxui

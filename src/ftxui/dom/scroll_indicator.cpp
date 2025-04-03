@@ -62,8 +62,8 @@ Element vscroll_indicator(Element child) {
         const bool up = (start_y <= y_up) && (y_up <= start_y + size);
         const bool down = (start_y <= y_down) && (y_down <= start_y + size);
 
-        const char* c = up ? (down ? "┃" : "╹") : (down ? "╻" : " ");  // NOLINT
-        screen.PixelAt(x, y).character = c;
+        const std::string_view c = up ? (down ? "┃" : "╹") : (down ? "╻" : " ");  // NOLINT
+        screen.PixelAt(x, y).set_grapheme(c, screen);
       }
     }
   };
@@ -117,9 +117,8 @@ Element hscroll_indicator(Element child) {
         const bool left = (start_x <= x_left) && (x_left <= start_x + size);
         const bool right = (start_x <= x_right) && (x_right <= start_x + size);
 
-        const char* c =
-            left ? (right ? "─" : "╴") : (right ? "╶" : " ");  // NOLINT
-        screen.PixelAt(x, y).character = c;
+        const std::string_view c = left ? (right ? "─" : "╴") : (right ? "╶" : " ");  // NOLINT
+        screen.PixelAt(x, y).set_grapheme(c, screen);
       }
     }
   };

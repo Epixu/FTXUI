@@ -15,7 +15,7 @@ namespace ftxui {
 
 namespace {
 // NOLINTNEXTLINE
-static const std::string charset_horizontal[11] = {
+static constexpr std::string_view charset_horizontal[11] = {
 #if defined(FTXUI_MICROSOFT_TERMINAL_FALLBACK)
     // Microsoft's terminals often use fonts not handling the 8 unicode
     // characters for representing the whole gauge. Fallback with less.
@@ -28,7 +28,7 @@ static const std::string charset_horizontal[11] = {
     "█"};
 
 // NOLINTNEXTLINE
-static const std::string charset_vertical[10] = {
+static constexpr std::string_view charset_vertical[10] = {
     "█",
     "▇",
     "▆",
@@ -108,12 +108,12 @@ class Gauge : public Node {
       const int limit_int = static_cast<int>(limit);
       int x = box_.x_min;
       while (x < limit_int) {
-        screen.at(x++, y) = charset_horizontal[9];  // NOLINT
+        screen.PixelAt(x++, y).set_grapheme(charset_horizontal[9], screen);  // NOLINT
       }
       // NOLINTNEXTLINE
-      screen.at(x++, y) = charset_horizontal[int(9 * (limit - limit_int))];
+      screen.PixelAt(x++, y).set_grapheme(charset_horizontal[int(9 * (limit - limit_int))], screen);
       while (x <= box_.x_max) {
-        screen.at(x++, y) = charset_horizontal[0];
+        screen.PixelAt(x++, y).set_grapheme(charset_horizontal[0], screen);
       }
     }
 
@@ -138,12 +138,12 @@ class Gauge : public Node {
       const int limit_int = static_cast<int>(limit);
       int y = box_.y_min;
       while (y < limit_int) {
-        screen.at(x, y++) = charset_vertical[8];  // NOLINT
+        screen.PixelAt(x, y++).set_grapheme(charset_vertical[8], screen);  // NOLINT
       }
       // NOLINTNEXTLINE
-      screen.at(x, y++) = charset_vertical[int(8 * (limit - limit_int))];
+      screen.PixelAt(x, y++).set_grapheme(charset_vertical[int(8 * (limit - limit_int))], screen);
       while (y <= box_.y_max) {
-        screen.at(x, y++) = charset_vertical[0];
+        screen.PixelAt(x, y++).set_grapheme(charset_vertical[0], screen);
       }
     }
 

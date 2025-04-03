@@ -101,8 +101,8 @@ void Render(Screen& screen, Node* node, Selection& selection) {
   Box box;
   box.x_min = 0;
   box.y_min = 0;
-  box.x_max = screen.dimx() - 1;
-  box.y_max = screen.dimy() - 1;
+  box.x_max = screen.width() - 1;
+  box.y_max = screen.height() - 1;
 
   Node::Status status;
   node->Check(&status);
@@ -155,8 +155,8 @@ void Render(Screen& screen, Node* node, Selection& selection) {
     });
   } else {
     screen.SetCursor(Screen::Cursor{
-        screen.dimx() - 1,
-        screen.dimy() - 1,
+        screen.width() - 1,
+        screen.height() - 1,
         Screen::Cursor::Shape::Hidden,
     });
   }
@@ -175,8 +175,8 @@ std::string GetNodeSelectedContent(Screen& screen,
   Box box;
   box.x_min = 0;
   box.y_min = 0;
-  box.x_max = screen.dimx() - 1;
-  box.y_max = screen.dimy() - 1;
+  box.x_max = screen.width() - 1;
+  box.y_max = screen.height() - 1;
 
   Node::Status status;
   node->Check(&status);

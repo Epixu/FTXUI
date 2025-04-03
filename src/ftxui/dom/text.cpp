@@ -60,18 +60,17 @@ class Text : public Node {
     int x = box_.x_min;
     const int y = box_.y_min;
 
-    if (y > box_.y_max) {
+    if (y > box_.y_max)
       return;
-    }
 
     for (const auto& cell : Utf8ToGlyphs(text_)) {
-      if (x > box_.x_max) {
+      if (x > box_.x_max)
         break;
-      }
-      if (cell == "\n") {
+
+      if (cell == "\n")
         continue;
-      }
-      screen.PixelAt(x, y).character = cell;
+
+      screen.PixelAt(x, y).set_grapheme(cell, screen);
 
       if (has_selection) {
         auto selectionTransform = screen.GetSelectionStyle();
@@ -108,10 +107,10 @@ class VText : public Node {
       return;
     }
     for (const auto& it : Utf8ToGlyphs(text_)) {
-      if (y > box_.y_max) {
+      if (y > box_.y_max)
         return;
-      }
-      screen.PixelAt(x, y).character = it;
+
+      screen.PixelAt(x, y).set_grapheme(it, screen);
       y += 1;
     }
   }

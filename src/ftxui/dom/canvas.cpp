@@ -51,7 +51,7 @@ namespace {
 // 11100010 10100010 10000000 // dot0-2
 
 // NOLINTNEXTLINE
-uint8_t g_map_braille[2][4][2] = {
+constexpr uint8_t g_map_braille[2][4][2] = {
     {
         {0b00000000, 0b00000001},  // NOLINT | dot1
         {0b00000000, 0b00000010},  // NOLINT | dot2
@@ -67,13 +67,13 @@ uint8_t g_map_braille[2][4][2] = {
 };
 
 // NOLINTNEXTLINE
-std::vector<std::string> g_map_block = {
+constexpr std::string_view g_map_block[] = {
     " ", "▘", "▖", "▌", "▝", "▀", "▞", "▛",
     "▗", "▚", "▄", "▙", "▐", "▜", "▟", "█",
 };
 
 // NOLINTNEXTLINE
-const std::map<std::string, uint8_t> g_map_block_inversed = {
+const std::map<std::string_view, uint8_t> g_map_block_inversed = {
     {" ", 0b0000}, {"▘", 0b0001}, {"▖", 0b0010}, {"▌", 0b0011},
     {"▝", 0b0100}, {"▀", 0b0101}, {"▞", 0b0110}, {"▛", 0b0111},
     {"▗", 0b1000}, {"▚", 0b1001}, {"▄", 0b1010}, {"▙", 0b1011},
@@ -135,34 +135,38 @@ void Canvas::DrawPoint(int x, int y, bool value, const Stylizer& style) {
 /// @param x the x coordinate of the dot.
 /// @param y the y coordinate of the dot.
 void Canvas::DrawPointOn(int x, int y) {
-  if (!IsIn(x, y)) {
+  if (!IsIn(x, y))
     return;
-  }
-  Cell& cell = storage_[XY{x / 2, y / 4}];
-  if (cell.type != CellType::kBraille) {
-    cell.content.character = "⠀";  // 3 bytes.
-    cell.type = CellType::kBraille;
+
+  const auto xy = x / 2 + (y / 4) * width();
+  Pixel& data = pixels_[xy];
+  Cell&  cell = cells_ [xy];
+  if (cell.type != Cell::kBraille) {
+    data.reset_grapheme(*this);  // 3 bytes.
+    cell.type = Cell::kBraille;
   }
 
-  cell.content.character[1] |= g_map_braille[x % 2][y % 4][0];  // NOLINT
-  cell.content.character[2] |= g_map_braille[x % 2][y % 4][1];  // NOLINT
+  data.character(1) |= g_map_braille[x % 2][y % 4][0];  // NOLINT
+  data.character(2) |= g_map_braille[x % 2][y % 4][1];  // NOLINT
 }
 
 /// @brief Erase a braille dot.
 /// @param x the x coordinate of the dot.
 /// @param y the y coordinate of the dot.
 void Canvas::DrawPointOff(int x, int y) {
-  if (!IsIn(x, y)) {
+  if (!IsIn(x, y))
     return;
-  }
-  Cell& cell = storage_[XY{x / 2, y / 4}];
-  if (cell.type != CellType::kBraille) {
-    cell.content.character = "⠀";  // 3 byt
-    cell.type = CellType::kBraille;
+
+  const auto xy = x / 2 + (y / 4) * width();
+  Pixel& data = pixels_[xy];
+  Cell&  cell = cells_ [xy];
+  if (cell.type != Cell::kBraille) {
+    data.reset_grapheme(*this);  // 3 byt
+    cell.type = Cell::kBraille;
   }
 
-  cell.content.character[1] &= ~(g_map_braille[x % 2][y % 4][0]);  // NOLINT
-  cell.content.character[2] &= ~(g_map_braille[x % 2][y % 4][1]);  // NOLINT
+  data.character(1) &= ~(g_map_braille[x % 2][y % 4][0]);  // NOLINT
+  data.character(2) &= ~(g_map_braille[x % 2][y % 4][1]);  // NOLINT
 }
 
 /// @brief Toggle a braille dot. A filled one will be erased, and the other will
@@ -170,17 +174,19 @@ void Canvas::DrawPointOff(int x, int y) {
 /// @param x the x coordinate of the dot.
 /// @param y the y coordinate of the dot.
 void Canvas::DrawPointToggle(int x, int y) {
-  if (!IsIn(x, y)) {
+  if (!IsIn(x, y))
     return;
-  }
-  Cell& cell = storage_[XY{x / 2, y / 4}];
-  if (cell.type != CellType::kBraille) {
-    cell.content.character = "⠀";  // 3 byt
-    cell.type = CellType::kBraille;
+
+  const auto xy = x / 2 + (y / 4) * width();
+  Pixel& data = pixels_[xy];
+  Cell&  cell = cells_ [xy];
+  if (cell.type != Cell::kBraille) {
+    data.reset_grapheme(*this);  // 3 byt
+    cell.type = Cell::kBraille;
   }
 
-  cell.content.character[1] ^= g_map_braille[x % 2][y % 4][0];  // NOLINT
-  cell.content.character[2] ^= g_map_braille[x % 2][y % 4][1];  // NOLINT
+  data.character(1) ^= g_map_braille[x % 2][y % 4][0];  // NOLINT
+  data.character(2) ^= g_map_braille[x % 2][y % 4][1];  // NOLINT
 }
 
 /// @brief Draw a line made of braille dots.
@@ -220,12 +226,11 @@ void Canvas::DrawPointLine(int x1,
   const int sy = y1 < y2 ? 1 : -1;
   const int length = std::max(dx, dy);
 
-  if (!IsIn(x1, y1) && !IsIn(x2, y2)) {
+  if (!IsIn(x1, y1) && !IsIn(x2, y2))
     return;
-  }
-  if (dx + dx > width_ * height_) {
+
+  if (dx + dx > width() * height())
     return;
-  }
 
   int error = dx - dy;
   for (int i = 0; i < length; ++i) {
@@ -466,40 +471,45 @@ void Canvas::DrawBlock(int x, int y, bool value, const Stylizer& style) {
 /// @param x the x coordinate of the block.
 /// @param y the y coordinate of the block.
 void Canvas::DrawBlockOn(int x, int y) {
-  if (!IsIn(x, y)) {
+  if (!IsIn(x, y))
     return;
-  }
+
   y /= 2;
-  Cell& cell = storage_[XY{x / 2, y / 2}];
-  if (cell.type != CellType::kBlock) {
-    cell.content.character = " ";
-    cell.type = CellType::kBlock;
+
+  const auto xy = x / 2 + (y / 2) * width(); // this block function has y/2 but the ones below are /4??
+  Pixel& data = pixels_[xy];
+  Cell&  cell = cells_ [xy];
+  if (cell.type != Cell::kBlock) {
+    data.reset_grapheme(*this);
+    cell.type = Cell::kBlock;
   }
 
   const uint8_t bit = (x % 2) * 2 + y % 2;
-  uint8_t value = g_map_block_inversed.at(cell.content.character);
+  uint8_t value = g_map_block_inversed.at(data.get_grapheme());
   value |= 1U << bit;
-  cell.content.character = g_map_block[value];
+  data.set_grapheme(g_map_block[value], *this);
 }
 
 /// @brief Erase a block.
 /// @param x the x coordinate of the block.
 /// @param y the y coordinate of the block.
 void Canvas::DrawBlockOff(int x, int y) {
-  if (!IsIn(x, y)) {
+  if (!IsIn(x, y))
     return;
-  }
-  Cell& cell = storage_[XY{x / 2, y / 4}];
-  if (cell.type != CellType::kBlock) {
-    cell.content.character = " ";
-    cell.type = CellType::kBlock;
+
+  const auto xy = x / 2 + (y / 4) * width(); //y/4 or y/2 ?? aren't blocks always 2x2?
+  Pixel& data = pixels_[xy];
+  Cell&  cell = cells_ [xy];
+  if (cell.type != Cell::kBlock) {
+    data.reset_grapheme(*this);
+    cell.type = Cell::kBlock;
   }
   y /= 2;
 
   const uint8_t bit = (y % 2) * 2 + x % 2;
-  uint8_t value = g_map_block_inversed.at(cell.content.character);
+  uint8_t value = g_map_block_inversed.at(data.get_grapheme());
   value &= ~(1U << bit);
-  cell.content.character = g_map_block[value];
+  data.set_grapheme(g_map_block[value], *this);
 }
 
 /// @brief Toggle a block. If it is filled, it will be erased. If it is empty,
@@ -507,20 +517,22 @@ void Canvas::DrawBlockOff(int x, int y) {
 /// @param x the x coordinate of the block.
 /// @param y the y coordinate of the block.
 void Canvas::DrawBlockToggle(int x, int y) {
-  if (!IsIn(x, y)) {
+  if (!IsIn(x, y))
     return;
-  }
-  Cell& cell = storage_[XY{x / 2, y / 4}];
-  if (cell.type != CellType::kBlock) {
-    cell.content.character = " ";
-    cell.type = CellType::kBlock;
+
+  const auto xy = x / 2 + (y / 4) * width(); //y/4 or y/2 ?? aren't blocks always 2x2?
+  Pixel& data = pixels_[xy];
+  Cell&  cell = cells_ [xy];
+  if (cell.type != Cell::kBlock) {
+    data.reset_grapheme(*this);
+    cell.type = Cell::kBlock;
   }
   y /= 2;
 
   const uint8_t bit = (y % 2) * 2 + x % 2;
-  uint8_t value = g_map_block_inversed.at(cell.content.character);
+  uint8_t value = g_map_block_inversed.at(data.get_grapheme());
   value ^= 1U << bit;
-  cell.content.character = g_map_block[value];
+  data.set_grapheme(g_map_block[value], *this);
 }
 
 /// @brief Draw a line made of block characters.
@@ -563,12 +575,11 @@ void Canvas::DrawBlockLine(int x1,
   const int sy = y1 < y2 ? 1 : -1;
   const int length = std::max(dx, dy);
 
-  if (!IsIn(x1, y1) && !IsIn(x2, y2)) {
+  if (!IsIn(x1, y1) && !IsIn(x2, y2))
     return;
-  }
-  if (dx + dx > width_ * height_) {
+
+  if (dx + dx > width() * height())
     return;
-  }
 
   int error = dx - dy;
   for (int i = 0; i < length; ++i) {
@@ -782,7 +793,7 @@ void Canvas::DrawBlockEllipseFilled(int x1,
 /// @param x the x coordinate of the text.
 /// @param y the y coordinate of the text.
 /// @param value the text to draw.
-void Canvas::DrawText(int x, int y, const std::string& value) {
+void Canvas::DrawText(int x, int y, const std::string_view& value) {
   DrawText(x, y, value, nostyle);
 }
 
@@ -793,7 +804,7 @@ void Canvas::DrawText(int x, int y, const std::string& value) {
 /// @param color the color of the text.
 void Canvas::DrawText(int x,
                       int y,
-                      const std::string& value,
+                      const std::string_view& value,
                       const Color& color) {
   DrawText(x, y, value, [color](Pixel& p) { p.foreground_color = color; });
 }
@@ -805,16 +816,19 @@ void Canvas::DrawText(int x,
 /// @param style the style of the text.
 void Canvas::DrawText(int x,
                       int y,
-                      const std::string& value,
+                      const std::string_view& value,
                       const Stylizer& style) {
   for (const auto& it : Utf8ToGlyphs(value)) {
     if (!IsIn(x, y)) {
       x += 2;
       continue;
     }
-    Cell& cell = storage_[XY{x / 2, y / 4}];
-    cell.type = CellType::kCell;
-    cell.content.character = it;
+
+    const auto xy = x / 2 + (y / 4) * width();
+    Pixel& data = pixels_[xy];
+    Cell&  cell = cells_ [xy];
+    cell.type = Cell::kCell;
+    data.character = it;
     style(cell.content);
     x += 2;
   }
