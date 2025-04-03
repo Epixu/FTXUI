@@ -12,44 +12,94 @@ namespace ftxui {
 
 class Image;
 
+struct PixelBase
+{
+   // A bit field representing the style:
+   union {
+      struct {
+         bool blink : 1;
+         bool bold : 1;
+         bool dim : 1;
+         bool italic : 1;
+         bool inverted : 1;
+         bool underlined : 1;
+         bool underlined_double : 1;
+         bool strikethrough : 1;
+         bool automerge : 1;
+      };
+
+      uint16_t style = 0;
+   };
+
+   // The hyperlink associated with the pixel.
+   // 0 is the default value, meaning no hyperlink.
+   // It's an index for accessing Screen meta data
+   uint8_t hyperlink = 0;
+
+   // Colors:
+   Color background_color = Color::Default;
+   Color foreground_color = Color::Default;
+};
+
 /// @brief A Unicode character/grapheme and its associated style.
-/// @tparam OWNERSHIP - if true, the grapheme representation is std::string which allocates
-///                   - if false, the grapheme is 'embedded' inside a pool and never allocates
+/// @detail This pixel is not embedded, and owns its character data (it's just the old Pixel implementation)
 /// @ingroup screen
-template<bool OWNERSHIP>
-struct TPixel {
-  TPixel()
-      : blink(false),
-        bold(false),
-        dim(false),
-        italic(false),
-        inverted(false),
-        underlined(false),
-        underlined_double(false),
-        strikethrough(false),
-        automerge(false) {}
+struct PixelStandalone : PixelBase {
+  PixelStandalone() = default;
+  PixelStandalone(const PixelStandalone&) = default;
+  PixelStandalone(PixelStandalone&&) = default;
+  PixelStandalone& operator=(const PixelStandalone&) = default;
+  PixelStandalone& operator=(PixelStandalone&&) = default;
 
-  // One does not simply copy a pixel - graphemes are pooled and proper ownership must be maintained
-  TPixel(const TPixel&) = delete;
-  TPixel(TPixel&&) = delete;
-  TPixel& operator=(const TPixel&) = delete;
-  TPixel& operator=(TPixel&&) = delete;
+  char& character(size_t n) {
+     return grapheme.data()[n];
+  }
 
-  // A bit field representing the style:
-  bool blink : 1;
-  bool bold : 1;
-  bool dim : 1;
-  bool italic : 1;
-  bool inverted : 1;
-  bool underlined : 1;
-  bool underlined_double : 1;
-  bool strikethrough : 1;
-  bool automerge : 1;
+  // Makes sure data is inserted into Image::characters_, and just interfaced here
+  void reset() {
+     *this = PixelStandalone();
+     grapheme = " ";
+  }
 
-  // The hyperlink associated with the pixel.
-  // 0 is the default value, meaning no hyperlink.
-  // It's an index for accessing Screen meta data
-  uint8_t hyperlink = 0;
+  void reset_fully() {
+     *this = PixelStandalone();
+  }
+
+  void reset_grapheme() {
+     grapheme = " ";
+  }
+
+  void set_grapheme(const std::string_view& g) {
+     grapheme = g;
+  }
+
+  auto& get_grapheme() const { return grapheme; }
+
+  // When pixel has ownership, this is isomorphic to set_grapheme
+  void reuse_grapheme(const std::string_view& g) {
+     grapheme = g;
+  }
+
+private:
+  std::string grapheme = "";
+};
+
+
+/// @brief A Unicode character/grapheme and its associated style.
+/// @detail This is an embedded pixel, the real character data is contained in the Image producing the pixel
+/// @ingroup screen
+struct Pixel : PixelBase {
+  constexpr Pixel() : PixelBase() {}
+
+  // One does not simply copy an embedded pixel - graphemes are pooled and proper ownership must be maintained
+  // Use PixelStandalone for the old behavior
+  Pixel(const Pixel&) = delete;
+  Pixel(Pixel&&) = delete;
+  Pixel& operator=(const Pixel&) = delete;
+  Pixel& operator=(Pixel&&) = delete;
+
+  void copy_pixel_data(const PixelStandalone& rhs, Image& pixel_owner);
+  void copy_pixel_data(const Pixel& rhs, Image& pixel_owner);
 
   // The graphemes stored into the pixel. To support combining characters,
   // like: a?, this can potentially contain multiple codepoints.
@@ -78,16 +128,8 @@ struct TPixel {
   void  reuse_grapheme(const std::string_view& g) { grapheme = g; }
 
 private:
-  std::conditional_t<OWNERSHIP, std::string, std::string_view> grapheme = {};
-
-public:
-  // Colors:
-  Color background_color = Color::Default;
-  Color foreground_color = Color::Default;
+  std::string_view grapheme = {};
 };
-
-using Pixel = TPixel<false>;
-using PixelStandalone = TPixel<true>;
 
 }  // namespace ftxui
 

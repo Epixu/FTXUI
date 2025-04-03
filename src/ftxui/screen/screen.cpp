@@ -305,64 +305,6 @@ std::map<B, A> InvertMap(const std::map<A, B> input) {
 const std::map<TileEncoding, std::string_view> tile_encoding_inverse =  // NOLINT
     InvertMap(tile_encoding);
 
-void UpgradeLeftRight(std::string& left, std::string& right) {
-  const auto it_left = tile_encoding.find(left);
-  if (it_left == tile_encoding.end()) {
-    return;
-  }
-  const auto it_right = tile_encoding.find(right);
-  if (it_right == tile_encoding.end()) {
-    return;
-  }
-
-  if (it_left->second.right == 0 && it_right->second.left != 0) {
-    TileEncoding encoding_left = it_left->second;
-    encoding_left.right = it_right->second.left;
-    const auto it_left_upgrade = tile_encoding_inverse.find(encoding_left);
-    if (it_left_upgrade != tile_encoding_inverse.end()) {
-      left = it_left_upgrade->second;
-    }
-  }
-
-  if (it_right->second.left == 0 && it_left->second.right != 0) {
-    TileEncoding encoding_right = it_right->second;
-    encoding_right.left = it_left->second.right;
-    const auto it_right_upgrade = tile_encoding_inverse.find(encoding_right);
-    if (it_right_upgrade != tile_encoding_inverse.end()) {
-      right = it_right_upgrade->second;
-    }
-  }
-}
-
-void UpgradeTopDown(std::string& top, std::string& down) {
-  const auto it_top = tile_encoding.find(top);
-  if (it_top == tile_encoding.end()) {
-    return;
-  }
-  const auto it_down = tile_encoding.find(down);
-  if (it_down == tile_encoding.end()) {
-    return;
-  }
-
-  if (it_top->second.down == 0 && it_down->second.top != 0) {
-    TileEncoding encoding_top = it_top->second;
-    encoding_top.down = it_down->second.top;
-    const auto it_top_down = tile_encoding_inverse.find(encoding_top);
-    if (it_top_down != tile_encoding_inverse.end()) {
-      top = it_top_down->second;
-    }
-  }
-
-  if (it_down->second.top == 0 && it_top->second.down != 0) {
-    TileEncoding encoding_down = it_down->second;
-    encoding_down.top = it_top->second.down;
-    const auto it_down_top = tile_encoding_inverse.find(encoding_down);
-    if (it_down_top != tile_encoding_inverse.end()) {
-      down = it_down_top->second;
-    }
-  }
-}
-
 bool ShouldAttemptAutoMerge(Pixel& pixel) {
   return pixel.automerge && pixel.get_grapheme().size() == 3;
 }
@@ -408,6 +350,64 @@ Screen::Screen(int dimx, int dimy) : Image{dimx, dimy} {
 #endif
 }
 
+void Screen::UpgradeLeftRight(Pixel& left, Pixel& right) {
+  const auto it_left = tile_encoding.find(left.get_grapheme());
+  if (it_left == tile_encoding.end()) {
+    return;
+  }
+  const auto it_right = tile_encoding.find(right.get_grapheme());
+  if (it_right == tile_encoding.end()) {
+    return;
+  }
+
+  if (it_left->second.right == 0 && it_right->second.left != 0) {
+    TileEncoding encoding_left = it_left->second;
+    encoding_left.right = it_right->second.left;
+    const auto it_left_upgrade = tile_encoding_inverse.find(encoding_left);
+    if (it_left_upgrade != tile_encoding_inverse.end()) {
+      left.set_grapheme(it_left_upgrade->second, *this);
+    }
+  }
+
+  if (it_right->second.left == 0 && it_left->second.right != 0) {
+    TileEncoding encoding_right = it_right->second;
+    encoding_right.left = it_left->second.right;
+    const auto it_right_upgrade = tile_encoding_inverse.find(encoding_right);
+    if (it_right_upgrade != tile_encoding_inverse.end()) {
+      right.set_grapheme(it_right_upgrade->second, *this);
+    }
+  }
+}
+
+void Screen::UpgradeTopDown(Pixel& top, Pixel& down) {
+  const auto it_top = tile_encoding.find(top.get_grapheme());
+  if (it_top == tile_encoding.end()) {
+    return;
+  }
+  const auto it_down = tile_encoding.find(down.get_grapheme());
+  if (it_down == tile_encoding.end()) {
+    return;
+  }
+
+  if (it_top->second.down == 0 && it_down->second.top != 0) {
+    TileEncoding encoding_top = it_top->second;
+    encoding_top.down = it_down->second.top;
+    const auto it_top_down = tile_encoding_inverse.find(encoding_top);
+    if (it_top_down != tile_encoding_inverse.end()) {
+      top.set_grapheme(it_top_down->second, *this);
+    }
+  }
+
+  if (it_down->second.top == 0 && it_top->second.down != 0) {
+    TileEncoding encoding_down = it_down->second;
+    encoding_down.top = it_top->second.down;
+    const auto it_down_top = tile_encoding_inverse.find(encoding_down);
+    if (it_down_top != tile_encoding_inverse.end()) {
+      down.set_grapheme(it_down_top->second, *this);
+    }
+  }
+}
+
 /// Produce a std::string that can be used to print the Screen on the
 /// terminal.
 /// @note Don't forget to flush stdout. Alternatively, you can use
@@ -428,17 +428,18 @@ std::string Screen::ToString() const {
 
     // After printing a fullwith character, we need to skip the next cell.
     bool previous_fullwidth = false;
-    for (const auto& pixel : pixels_[y]) {
+    auto pixel_row = pixels_.data() + y * width();
+    for (auto pixel = pixel_row; pixel < pixel_row + width(); ++pixel) {
       if (!previous_fullwidth) {
-        UpdatePixelStyle(this, ss, *previous_pixel_ref, pixel);
-        previous_pixel_ref = &pixel;
-        if (pixel.character.empty()) {
+        UpdatePixelStyle(this, ss, *previous_pixel_ref, *pixel);
+        previous_pixel_ref = pixel;
+        if (pixel->get_grapheme().empty()) {
           ss << " ";
         } else {
-          ss << pixel.character;
+          ss << pixel->get_grapheme();
         }
       }
-      previous_fullwidth = (string_width(pixel.character) == 2);
+      previous_fullwidth = (string_width(pixel->get_grapheme()) == 2);
     }
   }
 
@@ -508,21 +509,21 @@ void Screen::ApplyShader() {
   for (int y = 0; y < dimy_; ++y) {
     for (int x = 0; x < dimx_; ++x) {
       // Box drawing character uses exactly 3 byte.
-      Pixel& cur = pixels_[y][x];
+      Pixel& cur = pixels_[x + y * dimx_];
       if (!ShouldAttemptAutoMerge(cur)) {
         continue;
       }
 
       if (x > 0) {
-        Pixel& left = pixels_[y][x-1];
+        Pixel& left = pixels_[x-1 + y * dimx_];
         if (ShouldAttemptAutoMerge(left)) {
-          UpgradeLeftRight(left.character, cur.character);
+          UpgradeLeftRight(left, cur);
         }
       }
       if (y > 0) {
-        Pixel& top = pixels_[y-1][x];
+        Pixel& top = pixels_[x + (y-1) * dimx_];
         if (ShouldAttemptAutoMerge(top)) {
-          UpgradeTopDown(top.character, cur.character);
+          UpgradeTopDown(top, cur);
         }
       }
     }

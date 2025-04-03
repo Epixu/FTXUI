@@ -132,7 +132,7 @@ class Border : public Node {
 // For reference, here is the charset for normal border:
 class BorderPixel : public Node {
  public:
-  BorderPixel(Elements children, Pixel pixel)
+  BorderPixel(Elements children, PixelStandalone pixel)
       : Node(std::move(children)), pixel_(std::move(pixel)) {}
 
  private:
@@ -177,18 +177,18 @@ class BorderPixel : public Node {
       return;
     }
 
-    screen.PixelAt(box_.x_min, box_.y_min) = pixel_;
-    screen.PixelAt(box_.x_max, box_.y_min) = pixel_;
-    screen.PixelAt(box_.x_min, box_.y_max) = pixel_;
-    screen.PixelAt(box_.x_max, box_.y_max) = pixel_;
+    screen.PixelAt(box_.x_min, box_.y_min).copy_pixel_data(pixel_, screen);
+    screen.PixelAt(box_.x_max, box_.y_min).copy_pixel_data(pixel_, screen);
+    screen.PixelAt(box_.x_min, box_.y_max).copy_pixel_data(pixel_, screen);
+    screen.PixelAt(box_.x_max, box_.y_max).copy_pixel_data(pixel_, screen);
 
     for (int x = box_.x_min + 1; x < box_.x_max; ++x) {
-      screen.PixelAt(x, box_.y_min) = pixel_;
-      screen.PixelAt(x, box_.y_max) = pixel_;
+      screen.PixelAt(x, box_.y_min).copy_pixel_data(pixel_, screen);
+      screen.PixelAt(x, box_.y_max).copy_pixel_data(pixel_, screen);
     }
     for (int y = box_.y_min + 1; y < box_.y_max; ++y) {
-      screen.PixelAt(box_.x_min, y) = pixel_;
-      screen.PixelAt(box_.x_max, y) = pixel_;
+      screen.PixelAt(box_.x_min, y).copy_pixel_data(pixel_, screen);
+      screen.PixelAt(box_.x_max, y).copy_pixel_data(pixel_, screen);
     }
   }
 };
@@ -232,7 +232,7 @@ Element border(Element child) {
 /// @brief Same as border but with a constant Pixel around the element.
 /// @ingroup dom
 /// @see border
-Decorator borderWith(const Pixel& pixel) {
+Decorator borderWith(const PixelStandalone& pixel) {
   return [pixel](Element child) {
     return std::make_shared<BorderPixel>(unpack(std::move(child)), pixel);
   };

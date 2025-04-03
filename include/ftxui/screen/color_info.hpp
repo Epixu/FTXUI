@@ -21,9 +21,11 @@ struct ColorInfo {
   uint8_t value;
 };
 
-ColorInfo GetColorInfo(Color::Palette256 index);
-ColorInfo GetColorInfo(Color::Palette16 index);
+constexpr ColorInfo GetColorInfo(Color::Palette256 index);
+constexpr ColorInfo GetColorInfo(Color::Palette16 index);
 
 }  // namespace ftxui
 
 #endif  // FTXUI_SCREEN_COLOR_INFO_HPP
+
+#include "color_info.inl"

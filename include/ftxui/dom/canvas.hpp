@@ -22,7 +22,7 @@ namespace ftxui {
 
 struct Canvas : Image {
  public:
-  Canvas() = default;
+  Canvas() = delete;
   Canvas(int width, int height);
 
   // Getters: now coming from base
@@ -94,7 +94,7 @@ struct Canvas : Image {
   // Draw using directly pixels or images --------------------------------------
   // x is considered to be a multiple of 2.
   // y is considered to be a multiple of 4.
-  void DrawPixel(int x, int y, const Pixel&);
+  void DrawPixel(int x, int y, const PixelStandalone&);
   void DrawImage(int x, int y, const Image&);
 
   // Decorator:

@@ -52,7 +52,7 @@ Element separatorHeavy();
 Element separatorDouble();
 Element separatorEmpty();
 Element separatorStyled(BorderStyle);
-Element separator(Pixel);
+Element separator(PixelStandalone);
 Element separatorCharacter(std::string);
 Element separatorHSelector(float left,
                            float right,
@@ -78,7 +78,7 @@ Element borderEmpty(Element);
 Decorator borderStyled(BorderStyle);
 Decorator borderStyled(BorderStyle, Color);
 Decorator borderStyled(Color);
-Decorator borderWith(const Pixel&);
+Decorator borderWith(const PixelStandalone&);
 Element window(Element title, Element content, BorderStyle border = ROUNDED);
 Element spinner(int charset_index, size_t image_index);
 Element paragraph(const std::string& text);

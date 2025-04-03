@@ -8,23 +8,23 @@
 #include <vector>  // for vector
 
 namespace ftxui {
-std::string to_string(const std::wstring& s);
-std::wstring to_wstring(const std::string& s);
+std::string to_string(const std::wstring_view& s);
+std::wstring to_wstring(const std::string_view& s);
 
 template <typename T>
 std::wstring to_wstring(T s) {
   return to_wstring(std::to_string(s));
 }
 
-int string_width(const std::string&);
+int string_width(const std::string_view&);
 
 // Split the string into a its glyphs. An empty one is inserted ater fullwidth
 // ones.
-std::vector<std::string> Utf8ToGlyphs(const std::string& input);
+std::vector<std::string> Utf8ToGlyphs(const std::string_view& input);
 
 // Map every cells drawn by |input| to their corresponding Glyphs. Half-size
 // Glyphs takes one cell, full-size Glyphs take two cells.
-std::vector<int> CellToGlyphIndex(const std::string& input);
+std::vector<int> CellToGlyphIndex(const std::string_view& input);
 
 }  // namespace ftxui
 

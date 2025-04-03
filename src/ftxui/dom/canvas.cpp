@@ -88,17 +88,16 @@ constexpr auto nostyle = [](Pixel& /*pixel*/) {};
 /// @param width the width of the canvas. A cell is a 2x4 braille dot.
 /// @param height the height of the canvas. A cell is a 2x4 braille dot.
 Canvas::Canvas(int width, int height)
-    : width_(width),
-      height_(height),
-      storage_(width_ * height_ / 8 /* NOLINT */) {}
+    : Image (width, height)
+    , cells_((width * height) / 8 /* NOLINT */) {}
 
 /// @brief Get the content of a cell.
 /// @param x the x coordinate of the cell.
 /// @param y the y coordinate of the cell.
-Pixel Canvas::GetPixel(int x, int y) const {
+/*Pixel Canvas::GetPixel(int x, int y) const {
   auto it = storage_.find(XY{x, y});
   return (it == storage_.end()) ? Pixel() : it->second.content;
-}
+}*/
 
 /// @brief Draw a braille dot.
 /// @param x the x coordinate of the dot.
@@ -828,8 +827,8 @@ void Canvas::DrawText(int x,
     Pixel& data = pixels_[xy];
     Cell&  cell = cells_ [xy];
     cell.type = Cell::kCell;
-    data.character = it;
-    style(cell.content);
+    data.set_grapheme(it, *this);
+    style(data);
     x += 2;
   }
 }
@@ -838,10 +837,12 @@ void Canvas::DrawText(int x,
 /// @param x the x coordinate of the pixel.
 /// @param y the y coordinate of the pixel.
 /// @param p the pixel to draw.
-void Canvas::DrawPixel(int x, int y, const Pixel& p) {
-  Cell& cell = storage_[XY{x / 2, y / 4}];
-  cell.type = CellType::kCell;
-  cell.content = p;
+void Canvas::DrawPixel(int x, int y, const PixelStandalone& p) {
+  const auto xy = x / 2 + (y / 4) * width();
+  Pixel& data = pixels_[xy];
+  Cell&  cell = cells_ [xy];
+  cell.type = Cell::kCell;
+  data.copy_pixel_data(p, *this);
 }
 
 /// @brief Draw a predefined image, with top-left corner at the given coordinate
@@ -855,17 +856,18 @@ void Canvas::DrawImage(int x, int y, const Image& image) {
   y /= 4;
   const int dx_begin = std::max(0, -x);
   const int dy_begin = std::max(0, -y);
-  const int dx_end = std::min(image.dimx(), width_ - x);
-  const int dy_end = std::min(image.dimy(), height_ - y);
+  const int dx_end = std::min(image.width(), width() - x);
+  const int dy_end = std::min(image.height(), height() - y);
 
   for (int dy = dy_begin; dy < dy_end; ++dy) {
     for (int dx = dx_begin; dx < dx_end; ++dx) {
-      Cell& cell = storage_[XY{
-          x + dx,
-          y + dy,
-      }];
-      cell.type = CellType::kCell;
-      cell.content = image.PixelAt(dx, dy);
+      const auto xy = (x + dx) + (y + dy) * width();
+      Pixel& data = pixels_[xy];
+      Cell& cell = cells_[xy];
+      cell.type = Cell::kCell;
+
+      auto& rhs = image.PixelAt(dx, dy); //todo check if PixelAtUnsafe is fine here, std::min and std::max should be enough
+      data.copy_pixel_data(rhs, *this);
     }
   }
 }
@@ -874,7 +876,8 @@ void Canvas::DrawImage(int x, int y, const Image& image) {
 /// @param style a function that modifies the pixel.
 void Canvas::Style(int x, int y, const Stylizer& style) {
   if (IsIn(x, y)) {
-    style(storage_[XY{x / 2, y / 4}].content);
+     const auto xy = x / 2 + (y / 4) * width();
+     style(pixels_[xy]);
   }
 }
 
@@ -890,7 +893,7 @@ class CanvasNodeBase : public Node {
     const int x_max = std::min(c.width() / 2, box_.x_max - box_.x_min + 1);
     for (int y = 0; y < y_max; ++y) {
       for (int x = 0; x < x_max; ++x) {
-        screen.PixelAt(box_.x_min + x, box_.y_min + y) = c.GetPixel(x, y);
+        screen.PixelAt(box_.x_min + x, box_.y_min + y).copy_pixel_data(c.PixelAt(x, y), screen); //todo check if PixelAtUnsafe is fine here, std::min and std::max before loop should be better
       }
     }
   }
@@ -923,11 +926,11 @@ Element canvas(int width, int height, std::function<void(Canvas&)> fn) {
   class Impl : public CanvasNodeBase {
    public:
     Impl(int width, int height, std::function<void(Canvas&)> fn)
-        : width_(width), height_(height), fn_(std::move(fn)) {}
+        : canvas_(width, height), fn_(std::move(fn)) {}
 
     void ComputeRequirement() final {
-      requirement_.min_x = (width_ + 1) / 2;
-      requirement_.min_y = (height_ + 3) / 4;
+      requirement_.min_x = (canvas_.width() + 1) / 2;
+      requirement_.min_y = (canvas_.height() + 3) / 4;
     }
 
     void Render(Screen& screen) final {
@@ -940,8 +943,6 @@ Element canvas(int width, int height, std::function<void(Canvas&)> fn) {
 
     const Canvas& canvas() final { return canvas_; }
     Canvas canvas_;
-    int width_;
-    int height_;
     std::function<void(Canvas&)> fn_;
   };
   return std::make_shared<Impl>(width, height, std::move(fn));

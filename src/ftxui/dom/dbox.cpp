@@ -52,18 +52,27 @@ class DBox : public Node {
       return;
     }
 
-    const int width = box_.x_max - box_.x_min + 1;
-    const int height = box_.y_max - box_.y_min + 1;
+    const int y_min = std::max(box_.y_min, 0);
+    const int y_max = std::min(screen.height(), box_.y_max);
+    const int x_min = std::max(box_.x_min, 0);
+    const int x_max = std::min(screen.width(), box_.x_max);
+    const int width = x_max - x_min + 1;
+    const int height = y_max - y_min + 1;
+
+    // Previously, this temporary pixel array also included regions outside screen,
+    // which is a completely unnecessary overhead. You rely on screen.PixelAt to avoid
+    // painting these pixels, but they were still computed for no reason
+    // now that we don't rely on PixelAt safety, I've added the corresponding PixelAtUnsafe to avoid branching
     std::vector<Pixel> pixels(std::size_t(width * height));
 
     for (auto& child : children_) {
       child->Render(screen);
 
-      // Accumulate the pixels
+      // Accumulate the pixels of each child
       Pixel* acc = pixels.data();
-      for (int x = 0; x < width; ++x) {
-        for (int y = 0; y < height; ++y) {
-          auto& pixel = screen.PixelAt(x + box_.x_min, y + box_.y_min);
+      for (int x = x_min; x < x_max; ++x) {
+        for (int y = y_min; y < y_max; ++y) {
+          auto& pixel = screen.PixelAtUnsafe(x, y);
           acc->background_color =
               Color::Blend(acc->background_color, pixel.background_color);
           acc->automerge = pixel.automerge || acc->automerge;
@@ -91,13 +100,12 @@ class DBox : public Node {
       }
     }
 
-    // Render the accumulated pixels:
+    // Render the accumulated pixels back onto the screen:
     Pixel* acc = pixels.data();
-    for (int x = box_.x_min; x < width; ++x) {
-      for (int y = box_.y_min; y < height; ++y) {
-         //TODO just memcpy row by row?
-        screen.PixelAt(x, y) = *acc++;  // NOLINT
-      }
+    for (int y = y_min; y < y_max; ++y) {
+       // Batch-copy entire row in the desired region. these pixels have no ownership, so this should be completely safe
+       memcpy(&screen.PixelAtUnsafe(x_min, y), acc, sizeof(Pixel) * width);  // NOLINT
+       acc += width;
     }
   }
 };

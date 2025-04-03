@@ -19,6 +19,8 @@ class Image {
   // Constructors:
   Image() = delete;
   Image(int dimx, int dimy);
+  Image(const Image&);
+  Image(Image&&);
 
   // Access a character in the grid at a given position.
   //std::string_view& at(int x, int y);
@@ -27,6 +29,9 @@ class Image {
   // Access a cell (Pixel) in the grid at a given position.
   Pixel& PixelAt(int x, int y);
   const Pixel& PixelAt(int x, int y) const;
+
+  Pixel& PixelAtUnsafe(int x, int y);
+  const Pixel& PixelAtUnsafe(int x, int y) const;
 
   // Get screen dimensions.
   int width() const { return dimx_; }
@@ -77,16 +82,29 @@ class Image {
 // (or just the ones potentially used in an image)
 // from the get go and use those as a palette of sorts, avoiding appending new
 // data to the pool in 99% of the cases!!!!
-inline void Pixel::reset_grapheme(Image& pixel_owner) {
+void Pixel::reset_grapheme(Image& pixel_owner) {
   grapheme = {pixel_owner.get_pool().data(), 1};
 }
-inline void Pixel::set_grapheme(const std::string_view& g, Image& pixel_owner) {
+
+void Pixel::set_grapheme(const std::string_view& g, Image& pixel_owner) {
   grapheme = pixel_owner.pool_chardata(g);
 }
-inline void Pixel::reset(Image& pixel_owner) {
+
+void Pixel::reset(Image& pixel_owner) {
   new (this) Pixel;
   reset_grapheme(pixel_owner);
 }
+
+void Pixel::copy_pixel_data(const PixelStandalone& rhs, Image& pixel_owner) {
+   PixelBase::operator = (rhs);
+   set_grapheme(rhs.get_grapheme(), pixel_owner);
+}
+
+void Pixel::copy_pixel_data(const Pixel& rhs, Image& pixel_owner) {
+   PixelBase::operator = (rhs);
+   set_grapheme(rhs.get_grapheme(), pixel_owner);
+}
+
 
 }  // namespace ftxui
 

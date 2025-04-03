@@ -81,6 +81,10 @@ class Screen : public Image {
   SelectionStyle selection_style_ = [](Pixel& pixel) {
     pixel.inverted ^= true;
   };
+
+  void UpgradeLeftRight(Pixel& left, Pixel& right);
+  void UpgradeTopDown(Pixel& top, Pixel& down);
+
 };
 
 }  // namespace ftxui

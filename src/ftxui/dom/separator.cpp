@@ -79,20 +79,26 @@ class SeparatorAuto : public Node {
 
 class SeparatorWithPixel : public SeparatorAuto {
  public:
-  explicit SeparatorWithPixel(Pixel pixel)
+  explicit SeparatorWithPixel(PixelStandalone pixel)
       : SeparatorAuto(LIGHT), pixel_(std::move(pixel)) {
     pixel_.automerge = true;
   }
   void Render(Screen& screen) override {
     for (int y = box_.y_min; y <= box_.y_max; ++y) {
       for (int x = box_.x_min; x <= box_.x_max; ++x) {
-        screen.PixelAt(x, y) = pixel_;
+         auto& rhs = screen.PixelAt(x, y);
+         
+         rhs.style = pixel_.style;
+         rhs.background_color = pixel_.background_color;
+         rhs.foreground_color = pixel_.foreground_color;
+         rhs.hyperlink = pixel_.hyperlink;
+         rhs.set_grapheme(pixel_.get_grapheme(), screen);
       }
     }
   }
 
  private:
-  Pixel pixel_;
+  PixelStandalone pixel_;
 };
 }  // namespace
 
@@ -421,7 +427,7 @@ Element separatorCharacter(std::string value) {
 ///
 /// Down
 /// ```
-Element separator(Pixel pixel) {
+Element separator(PixelStandalone pixel) {
   return std::make_shared<SeparatorWithPixel>(std::move(pixel));
 }
 
@@ -472,10 +478,10 @@ Element separatorHSelector(float left,
         const bool b_empty = demi_cell_left == b || demi_cell_right == b;
 
         if (!a_empty && !b_empty) {
-          pixel.character = "─";
+          pixel.set_grapheme("─", screen);
           pixel.automerge = true;
         } else {
-          pixel.character = a_empty ? "╶" : "╴";  // NOLINT
+          pixel.set_grapheme(a_empty ? "╶" : "╴", screen);  // NOLINT
           pixel.automerge = false;
         }
 
@@ -542,10 +548,10 @@ Element separatorVSelector(float up,
         const bool b_empty = demi_cell_up == b || demi_cell_down == b;
 
         if (!a_empty && !b_empty) {
-          pixel.character = "│";
+          pixel.set_grapheme("│", screen);
           pixel.automerge = true;
         } else {
-          pixel.character = a_empty ? "╷" : "╵";  // NOLINT
+          pixel.set_grapheme(a_empty ? "╷" : "╵", screen);  // NOLINT
           pixel.automerge = false;
         }
 
