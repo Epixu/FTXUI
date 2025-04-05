@@ -52,6 +52,7 @@ out/
 # include directory:
 !include/ftxui/**/*.hpp
 !include/ftxui/**/*.cpp
+!include/ftxui/**/*.inl
 
 # src directory:
 !src/ftxui/**/*.hpp
