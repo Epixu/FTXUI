@@ -10,26 +10,22 @@
 
 namespace ftxui {
 
-namespace {
-Pixel& dev_null_pixel() {
-  static Pixel pixel;
-  return pixel;
-}
-}  // namespace
-
 /// @brief Create a new image with default pixels
 Image::Image(int dimx, int dimy)
     : stencil{0, dimx - 1, 0, dimy - 1},
       dimx_(dimx),
-      dimy_(dimy),
-      pixels_(dimy * dimx) {
-   // Let's be generous and assume that every char is a 32bit unicode codepoint
-   // Double that for some more pool space
-   characters_.reserve(dimy * dimx * 4 * 2);
-   // First character is always ' ', for use with reset_grapheme
-   characters_ += ' ';
-   //TODO we can reserve entire charsets here and index them, instead of always appending
-   // this way an append will happen only in the rare case of a grapheme actually being displayed
+      dimy_(dimy) {
+   if (dimx_ * dimy_) {
+      // Let's be generous and assume that every char is a 32bit unicode codepoint
+      characters_.resize(dimx_ * dimy_ * 4, ' ');
+      pixels_.reserve(dimx_ * dimy_);
+
+      for (int i = 0; i < dimx_ * dimy_; ++i) {
+         pixels_.emplace_back(
+            std::string_view(characters_.data() + i * 4, 1)
+         );
+      }
+   }
 }
 
 /// @brief Copy the contents of an image, pixel by pixel
@@ -37,16 +33,17 @@ Image::Image(const Image& rhs)
     : stencil{rhs.stencil},
       dimx_(rhs.dimx_),
       dimy_(rhs.dimy_),
-      pixels_(rhs.dimx_* rhs.dimy_) {
-   // Let's be generous and assume that every char is a 32bit unicode codepoint
-   // Double that for some more pool space
-   characters_.reserve(rhs.dimx_ * rhs.dimy_ * 4 * 2);
-   // First character is always ' ', for use with reset_grapheme
-   characters_ += ' ';
+      characters_(rhs.characters_) {
+   if (dimx_ * dimy_) {
+      pixels_.reserve(dimx_ * dimy_);
 
-   // regenerate the pool locally
-   for (int i = 0; i < rhs.dimx_ * rhs.dimy_; ++i)
-      pixels_[i].copy_pixel_data(rhs.pixels_[i], *this);
+      for (auto& rhsp : rhs.pixels_) {
+         pixels_.emplace_back(std::string_view(
+            characters_.data() + (rhsp.get_grapheme().data() - rhs.characters_.data()),
+            rhsp.get_grapheme().size()
+         ));
+      }
+   }
 }
 
 /// @brief Transfer ownership from another image
@@ -59,6 +56,38 @@ Image::Image(Image&& rhs)
    // reset source
    rhs.stencil = {0, 0, 0, 0};
    rhs.dimx_ = rhs.dimy_ = 0;
+}
+
+/// @brief  Copy an image by reusing local memory if possible
+Image& Image::operator = (const Image& rhs) {
+   stencil = rhs.stencil;
+   dimx_ = rhs.dimx_;
+   dimy_ = rhs.dimy_;
+   characters_ = rhs.characters_;
+
+   pixels_.clear();
+   pixels_.reserve(dimx_ * dimy_);
+
+   for (auto& rhsp : rhs.pixels_) {
+      pixels_.emplace_back(std::string_view(
+         characters_.data() + (rhsp.get_grapheme().data() - rhs.characters_.data()),
+         rhsp.get_grapheme().size()
+      ));
+   }
+
+   return *this;
+}
+
+/// @brief  transfer ownership of an image
+Image& Image::operator = (Image&& rhs) {
+   stencil = rhs.stencil;
+   dimx_ = rhs.dimx_;
+   dimy_ = rhs.dimy_;
+   characters_ = std::move(rhs.characters_);
+   pixels_ = std::move(rhs.pixels_);
+   rhs.stencil = {0, 0, 0, 0};
+   rhs.dimx_ = rhs.dimy_ = 0;
+   return *this;
 }
 
 /// @brief Access a character in a cell at a given position.
@@ -78,29 +107,118 @@ const std::string_view& Image::at(int x, int y) const {
 /// @brief Access a cell (Pixel) at a given position.
 /// @param x The cell position along the x-axis.
 /// @param y The cell position along the y-axis.
-Pixel& Image::PixelAt(int x, int y) {
-  return stencil.Contain(x, y) ? pixels_[x + y*dimx_] : dev_null_pixel();
-}
+/*Pixel& Image::PixelAt(int x, int y) {
+  return stencil.Contain(x, y) ? pixels_[x + y*dimx_] : dev_null_pixel(); // this is very costly to do per-pixel. just check and min/max bounding boxes once before you iterate pixels
+}*/
 
-Pixel& Image::PixelAtUnsafe(int x, int y) {
+Pixel& Image::PixelAt(int x, int y) {
+   if (not stencil.Contain(x, y))
+      exit(-1); //TODO make sure to delete this branch when safety is ensured
   return pixels_[x + y*dimx_];
 }
 
 /// @brief Access a cell (Pixel) at a given position.
 /// @param x The cell position along the x-axis.
 /// @param y The cell position along the y-axis.
-const Pixel& Image::PixelAt(int x, int y) const {
+/*const Pixel& Image::PixelAt(int x, int y) const {
   return stencil.Contain(x, y) ? pixels_[x + y*dimx_] : dev_null_pixel();
-}
+}*/
 
-const Pixel& Image::PixelAtUnsafe(int x, int y) const {
-  return pixels_[x + y*dimx_];
+const Pixel& Image::PixelAt(int x, int y) const {
+   if (not stencil.Contain(x, y))
+      exit(-1); //TODO make sure to delete this branch when safety is ensured
+   return pixels_[x + y*dimx_];
 }
 
 /// @brief Clear all the pixels from the screen
 void Image::Clear() {
   for (auto& pixel : pixels_)
-    pixel.reset_fully();
+    pixel.reset();
+}
+
+/// @brief Inserts data into the memory pool, and returns a non-owning view to it
+/// @attention call this only if data is longer than 4 bytes to avoid performance issues
+std::string_view Image::pool_chardata(const std::string_view& data) {
+   auto old_ptr = characters_.data();
+   auto old_siz = characters_.size();
+   //auto old_cap = characters_.capacity();
+   characters_ += data;
+   if (old_ptr != characters_.data()) {
+      //a reallocation happened and memory moved, so compactify, reinterface pixels etc...
+      compactify(old_ptr);
+      old_ptr = characters_.data();
+      old_siz = characters_.size();
+
+      characters_ += data;
+      if (characters_.data() != old_ptr)
+         exit(-1); //TODO just making sure that memory never moves here. if it moves, it will invalidate all previously inserted pixels_
+   }
+
+   return {characters_.data() + old_siz, characters_.size() - old_siz};
+}
+
+/// @attention when this function is called, you can assume that any pixel.get_grapheme().data() pointer is invalid
+/// pixel.get_grapheme().size() however is still valid
+void Image::compactify(const char* olddata) {
+   // First pass calculates pool requirements, so that pool never reallocates while we're doing this
+   size_t pool_requirement = 0;
+   for (auto& p : pixels_)
+      pool_requirement += p.get_grapheme().size();
+   if (pool_requirement < dimx_ * dimy_ * 4)
+      pool_requirement = dimx_ * dimy_ * 4;
+
+   // Allocate a new pool with a more generous size
+   std::string temp;
+   temp.reserve(pool_requirement*2);
+   const auto old_ptr = temp.data();
+
+   // Remap all pixels
+   for (auto& p : pixels_) {
+      const auto old_siz = temp.size();
+      temp += std::string_view(characters_.data() + (p.get_grapheme().data() - olddata), p.get_grapheme().size());
+      if (temp.data() != old_ptr)
+         exit(-1); //TODO just making sure that memory never moves here. if it moves, it will invalidate all previously inserted pixels_
+
+      p.reuse_grapheme(std::string_view(temp.data() + old_siz, temp.size() - old_siz));
+   }
+
+   // Switch to the new pool
+   characters_ = std::move(temp);
+   if (characters_.data() != old_ptr)
+      exit(-1); //TODO just making sure that memory never moves here. if it moves, it will invalidate all previously inserted pixels_
+}
+
+
+// I noticed, that at many places "character = " "; // Consider the pixel written."
+// those occurences are replaced with this call
+void Pixel::reset_grapheme() {
+  character(0) = ' ';
+  grapheme = std::string_view(grapheme.data(), 1);
+}
+
+void Pixel::set_grapheme(const std::string_view& g, Image& pixel_owner) {
+  if (g.size() > 4) {
+     grapheme = pixel_owner.pool_chardata(g);
+  }
+  else {
+     memcpy(const_cast<char*>(grapheme.data()), g.data(), g.size());
+     grapheme = std::string_view(grapheme.data(), g.size());
+  }
+}
+
+void Pixel::reset() {
+   PixelBase::operator = (PixelBase());
+   reset_grapheme();
+}
+
+void Pixel::copy_pixel_data(const PixelStandalone& rhs, Image& pixel_owner) {
+   PixelBase::operator = (rhs);
+   set_grapheme(rhs.get_grapheme(), pixel_owner);
+}
+
+void Pixel::copy_pixel_data(const Pixel& rhs, Image& pixel_owner) {
+   PixelBase::operator = (rhs);
+   set_grapheme(rhs.get_grapheme(), pixel_owner);
 }
 
 }  // namespace ftxui

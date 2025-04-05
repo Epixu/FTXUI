@@ -53,33 +53,30 @@ class DBox : public Node {
     }
 
     const int y_min = std::max(box_.y_min, 0);
-    const int y_max = std::min(screen.height(), box_.y_max);
+    const int y_max = std::min(screen.height(), box_.y_max + 1);
     const int x_min = std::max(box_.x_min, 0);
-    const int x_max = std::min(screen.width(), box_.x_max);
-    const int width = x_max - x_min + 1;
-    const int height = y_max - y_min + 1;
+    const int x_max = std::min(screen.width(), box_.x_max + 1);
+    const int width = x_max - x_min;// +1;
+    const int height = y_max - y_min;// +1;
 
     // Previously, this temporary pixel array also included regions outside screen,
     // which is a completely unnecessary overhead. You rely on screen.PixelAt to avoid
-    // painting these pixels, but they were still computed for no reason
-    // now that we don't rely on PixelAt safety, I've added the corresponding PixelAtUnsafe to avoid branching
-    std::vector<Pixel> pixels(std::size_t(width * height));
+    // painting these pixels, but they were still computed for no reason. additioanlly screen.PixelAt no longer needs to be safe, if proper precausions are taken beforehand
+    Image pixels(width, height);
 
     for (auto& child : children_) {
       child->Render(screen);
 
       // Accumulate the pixels of each child
-      Pixel* acc = pixels.data();
-      for (int x = x_min; x < x_max; ++x) {
-        for (int y = y_min; y < y_max; ++y) {
-          auto& pixel = screen.PixelAtUnsafe(x, y);
-          acc->background_color =
-              Color::Blend(acc->background_color, pixel.background_color);
+      Pixel* acc = pixels.get_pixels().data();
+      for (int y = y_min; y < y_max; ++y) {
+        for (int x = x_min; x < x_max; ++x) { // iterate x as inner for cache-friendliness
+          auto& pixel = screen.PixelAt(x, y);
+          acc->background_color = Color::Blend(acc->background_color, pixel.background_color);
           acc->automerge = pixel.automerge || acc->automerge;
 
           if (pixel.get_grapheme().empty()) {
-            acc->foreground_color =
-                Color::Blend(acc->foreground_color, pixel.background_color);
+            acc->foreground_color = Color::Blend(acc->foreground_color, pixel.background_color); //TODO graphemes are never empty() currently. this can be fixed by a custom string_view class that allows for size() == 0 without resetting the data() pointer
           } else {
             acc->blink = pixel.blink;
             acc->bold = pixel.bold;
@@ -90,22 +87,24 @@ class DBox : public Node {
             acc->underlined_double = pixel.underlined_double;
             acc->strikethrough = pixel.strikethrough;
             acc->hyperlink = pixel.hyperlink;
-            acc->reuse_grapheme(pixel.get_grapheme()); // assumes that 'acc' and 'pixel' are in the same memory space! very important!
+            acc->set_grapheme(pixel.get_grapheme(), pixels);
             acc->foreground_color = pixel.foreground_color;
           }
+
           ++acc;  // NOLINT
 
-          pixel.reset_fully();
+          pixel.reset(); //TODO no longer makes grapheme empty, but instead does ' '
         }
       }
     }
 
     // Render the accumulated pixels back onto the screen:
-    Pixel* acc = pixels.data();
+    Pixel* acc = pixels.get_pixels().data();
     for (int y = y_min; y < y_max; ++y) {
-       // Batch-copy entire row in the desired region. these pixels have no ownership, so this should be completely safe
-       memcpy(&screen.PixelAtUnsafe(x_min, y), acc, sizeof(Pixel) * width);  // NOLINT
-       acc += width;
+       for (int x = x_min; x < x_max; ++x) {
+          screen.PixelAt(x_min, y).copy_pixel_data(*acc, screen); // NOLINT
+          ++acc;
+       }
     }
   }
 };

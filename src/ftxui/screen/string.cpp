@@ -1314,7 +1314,7 @@ int wchar_width(wchar_t ucs) {
   return codepoint_width(uint32_t(ucs));
 }
 
-int wstring_width(const std::wstring& text) {
+int wstring_width(const std::wstring_view& text) {
   int width = 0;
 
   for (const wchar_t& it : text) {
@@ -1327,7 +1327,7 @@ int wstring_width(const std::wstring& text) {
   return width;
 }
 
-int string_width(const std::string& input) {
+int string_width(const std::string_view& input) {
   int width = 0;
   size_t start = 0;
   while (start < input.size()) {
@@ -1396,7 +1396,7 @@ std::vector<std::string> Utf8ToGlyphs(const std::string_view& input) {
   return out;
 }
 
-size_t GlyphPrevious(const std::string& input, size_t start) {
+size_t GlyphPrevious(const std::string_view& input, size_t start) {
   while (true) {
     if (start == 0) {
       return 0;
@@ -1421,7 +1421,7 @@ size_t GlyphPrevious(const std::string& input, size_t start) {
   }
 }
 
-size_t GlyphNext(const std::string& input, size_t start) {
+size_t GlyphNext(const std::string_view& input, size_t start) {
   bool glyph_found = false;
   while (start < input.size()) {
     size_t end = 0;
@@ -1447,7 +1447,7 @@ size_t GlyphNext(const std::string& input, size_t start) {
   return static_cast<int>(input.size());
 }
 
-size_t GlyphIterate(const std::string& input, int glyph_offset, size_t start) {
+size_t GlyphIterate(const std::string_view& input, int glyph_offset, size_t start) {
   if (glyph_offset >= 0) {
     for (int i = 0; i < glyph_offset; ++i) {
       start = GlyphNext(input, start);
@@ -1461,7 +1461,7 @@ size_t GlyphIterate(const std::string& input, int glyph_offset, size_t start) {
   }
 }
 
-std::vector<int> CellToGlyphIndex(const std::string& input) {
+std::vector<int> CellToGlyphIndex(const std::string_view& input) {
   int x = -1;
   std::vector<int> out;
   out.reserve(input.size());
@@ -1502,7 +1502,7 @@ std::vector<int> CellToGlyphIndex(const std::string& input) {
   return out;
 }
 
-int GlyphCount(const std::string& input) {
+int GlyphCount(const std::string_view& input) {
   int size = 0;
   size_t start = 0;
   size_t end = 0;
@@ -1531,7 +1531,7 @@ int GlyphCount(const std::string& input) {
 }
 
 std::vector<WordBreakProperty> Utf8ToWordBreakProperty(
-    const std::string& input) {
+    const std::string_view& input) {
   std::vector<WordBreakProperty> out;
   out.reserve(input.size());
   size_t start = 0;
@@ -1562,7 +1562,7 @@ std::vector<WordBreakProperty> Utf8ToWordBreakProperty(
 }
 
 /// Convert a UTF8 std::string into a std::wstring.
-std::string to_string(const std::wstring& s) {
+std::string to_string(const std::wstring_view& s) {
   std::string out;
 
   size_t i = 0;
@@ -1634,7 +1634,7 @@ std::string to_string(const std::wstring& s) {
 }
 
 /// Convert a std::wstring into a UTF8 std::string.
-std::wstring to_wstring(const std::string& s) {
+std::wstring to_wstring(const std::string_view& s) {
   std::wstring out;
 
   size_t i = 0;

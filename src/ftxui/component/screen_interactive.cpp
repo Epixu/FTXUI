@@ -945,9 +945,19 @@ void ScreenInteractive::Draw(Component component) {
   if (resized) {
     dimx_ = dimx;
     dimy_ = dimy;
-    pixels_ = std::vector<std::vector<Pixel>>(dimy, std::vector<Pixel>(dimx));
     cursor_.x = dimx_ - 1;
     cursor_.y = dimy_ - 1;
+
+    characters_.clear();
+    characters_.resize(dimx_ * dimy_ * 4, ' ');
+    pixels_.clear();
+    pixels_.reserve(dimx_ * dimy_);
+    
+    for (int i = 0; i < dimx_ * dimy_; ++i) {
+       pixels_.emplace_back(
+          std::string_view(characters_.data() + i * 4, 1)
+       );
+    }
   }
 
   // Periodically request the terminal emulator the frame position relative to

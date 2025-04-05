@@ -88,8 +88,8 @@ constexpr auto nostyle = [](Pixel& /*pixel*/) {};
 /// @param width the width of the canvas. A cell is a 2x4 braille dot.
 /// @param height the height of the canvas. A cell is a 2x4 braille dot.
 Canvas::Canvas(int width, int height)
-    : Image (width, height)
-    , cells_((width * height) / 8 /* NOLINT */) {}
+    : Image (width/2,  height/4)
+    , cells_(width/2 * height/4 /* NOLINT */) {}
 
 /// @brief Get the content of a cell.
 /// @param x the x coordinate of the cell.
@@ -141,7 +141,7 @@ void Canvas::DrawPointOn(int x, int y) {
   Pixel& data = pixels_[xy];
   Cell&  cell = cells_ [xy];
   if (cell.type != Cell::kBraille) {
-    data.reset_grapheme(*this);  // 3 bytes.
+    data.reset_grapheme();  // 3 bytes.
     cell.type = Cell::kBraille;
   }
 
@@ -160,7 +160,7 @@ void Canvas::DrawPointOff(int x, int y) {
   Pixel& data = pixels_[xy];
   Cell&  cell = cells_ [xy];
   if (cell.type != Cell::kBraille) {
-    data.reset_grapheme(*this);  // 3 byt
+    data.reset_grapheme();  // 3 byt
     cell.type = Cell::kBraille;
   }
 
@@ -180,7 +180,7 @@ void Canvas::DrawPointToggle(int x, int y) {
   Pixel& data = pixels_[xy];
   Cell&  cell = cells_ [xy];
   if (cell.type != Cell::kBraille) {
-    data.reset_grapheme(*this);  // 3 byt
+    data.reset_grapheme();  // 3 byt
     cell.type = Cell::kBraille;
   }
 
@@ -228,7 +228,7 @@ void Canvas::DrawPointLine(int x1,
   if (!IsIn(x1, y1) && !IsIn(x2, y2))
     return;
 
-  if (dx + dx > width() * height())
+  if (dx + dx > subpixel_width() * subpixel_height())
     return;
 
   int error = dx - dy;
@@ -475,11 +475,11 @@ void Canvas::DrawBlockOn(int x, int y) {
 
   y /= 2;
 
-  const auto xy = x / 2 + (y / 2) * width(); // this block function has y/2 but the ones below are /4??
+  const auto xy = x / 2 + (y / 2) * width();
   Pixel& data = pixels_[xy];
   Cell&  cell = cells_ [xy];
   if (cell.type != Cell::kBlock) {
-    data.reset_grapheme(*this);
+    data.reset_grapheme();
     cell.type = Cell::kBlock;
   }
 
@@ -496,11 +496,11 @@ void Canvas::DrawBlockOff(int x, int y) {
   if (!IsIn(x, y))
     return;
 
-  const auto xy = x / 2 + (y / 4) * width(); //y/4 or y/2 ?? aren't blocks always 2x2?
+  const auto xy = x / 2 + (y / 4) * width();
   Pixel& data = pixels_[xy];
   Cell&  cell = cells_ [xy];
   if (cell.type != Cell::kBlock) {
-    data.reset_grapheme(*this);
+    data.reset_grapheme();
     cell.type = Cell::kBlock;
   }
   y /= 2;
@@ -519,11 +519,11 @@ void Canvas::DrawBlockToggle(int x, int y) {
   if (!IsIn(x, y))
     return;
 
-  const auto xy = x / 2 + (y / 4) * width(); //y/4 or y/2 ?? aren't blocks always 2x2?
+  const auto xy = x / 2 + (y / 4) * width();
   Pixel& data = pixels_[xy];
   Cell&  cell = cells_ [xy];
   if (cell.type != Cell::kBlock) {
-    data.reset_grapheme(*this);
+    data.reset_grapheme();
     cell.type = Cell::kBlock;
   }
   y /= 2;
@@ -577,7 +577,7 @@ void Canvas::DrawBlockLine(int x1,
   if (!IsIn(x1, y1) && !IsIn(x2, y2))
     return;
 
-  if (dx + dx > width() * height())
+  if (dx + dx > subpixel_width() * subpixel_height())
     return;
 
   int error = dx - dy;
@@ -889,8 +889,8 @@ class CanvasNodeBase : public Node {
 
   void Render(Screen& screen) override {
     const Canvas& c = canvas();
-    const int y_max = std::min(c.height() / 4, box_.y_max - box_.y_min + 1);
-    const int x_max = std::min(c.width() / 2, box_.x_max - box_.x_min + 1);
+    const int y_max = std::min(c.height(), box_.y_max - box_.y_min + 1);
+    const int x_max = std::min(c.width(), box_.x_max - box_.x_min + 1);
     for (int y = 0; y < y_max; ++y) {
       for (int x = 0; x < x_max; ++x) {
         screen.PixelAt(box_.x_min + x, box_.y_min + y).copy_pixel_data(c.PixelAt(x, y), screen); //todo check if PixelAtUnsafe is fine here, std::min and std::max before loop should be better

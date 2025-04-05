@@ -89,14 +89,19 @@ private:
 /// @detail This is an embedded pixel, the real character data is contained in the Image producing the pixel
 /// @ingroup screen
 struct Pixel : PixelBase {
-  constexpr Pixel() : PixelBase() {}
-
   // One does not simply copy an embedded pixel - graphemes are pooled and proper ownership must be maintained
   // Use PixelStandalone for the old behavior
+  Pixel() = delete;
   Pixel(const Pixel&) = delete;
-  Pixel(Pixel&&) = delete;
   Pixel& operator=(const Pixel&) = delete;
   Pixel& operator=(Pixel&&) = delete;
+
+  Pixel(std::string_view&& g)
+     : grapheme(std::forward<std::string_view>(g)) {}
+
+  Pixel(Pixel&& rhs) 
+     : PixelBase(std::forward<PixelBase>(rhs))
+     , grapheme(std::move(rhs.grapheme)) {}
 
   void copy_pixel_data(const PixelStandalone& rhs, Image& pixel_owner);
   void copy_pixel_data(const Pixel& rhs, Image& pixel_owner);
@@ -117,9 +122,8 @@ struct Pixel : PixelBase {
   }
 
   // Makes sure data is inserted into Image::characters_, and just interfaced here
-  void  reset(Image& pixel_owner);
-  void  reset_fully() { new (this) Pixel; }
-  void  reset_grapheme(Image& pixel_owner);
+  void  reset();
+  void  reset_grapheme();
   void  set_grapheme(const std::string_view& g, Image& pixel_owner);
   auto& get_grapheme() const { return grapheme; }
 

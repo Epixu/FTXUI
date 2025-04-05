@@ -24,10 +24,15 @@ struct Canvas : Image {
  public:
   Canvas() = delete;
   Canvas(int width, int height);
+  Canvas(const Canvas&) = default;
+  Canvas(Canvas&&) = default;
+
+  Canvas& operator = (const Canvas&) = default;
+  Canvas& operator = (Canvas&&) = default;
 
   // Getters: now coming from base
-  //int width() const { return width_; }
-  //int height() const { return height_; }
+  int subpixel_width() const { return Image::width() * 2; }
+  int subpixel_height() const { return Image::height() * 4; }
   //Pixel GetPixel(int x, int y) const;
 
   using Stylizer = std::function<void(Pixel&)>;
