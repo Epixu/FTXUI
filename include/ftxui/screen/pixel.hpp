@@ -5,8 +5,8 @@
 #define FTXUI_SCREEN_PIXEL_HPP
 
 #include <cstdint>                 // for uint8_t
-#include <string_view>             // for string_view
 #include "ftxui/screen/color.hpp"  // for Color, Color::Default
+#include "ftxui/screen/packed_string.hpp"  // for PackedString
 
 namespace ftxui {
 
