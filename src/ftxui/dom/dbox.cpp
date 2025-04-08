@@ -75,7 +75,7 @@ class DBox : public Node {
           acc->background_color = Color::Blend(acc->background_color, pixel.background_color);
           acc->automerge = pixel.automerge || acc->automerge;
 
-          if (pixel.get_grapheme().empty()) {
+          if (pixel.grapheme.empty()) {
             acc->foreground_color = Color::Blend(acc->foreground_color, pixel.background_color); //TODO graphemes are never empty() currently. this can be fixed by a custom string_view class that allows for size() == 0 without resetting the data() pointer
           } else {
             acc->blink = pixel.blink;

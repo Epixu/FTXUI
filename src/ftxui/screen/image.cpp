@@ -16,42 +16,25 @@ Image::Image(int dimx, int dimy)
       dimx_(dimx),
       dimy_(dimy) {
    if (dimx_ * dimy_) {
-      // Let's be generous and assume that every char is a 32bit unicode codepoint
-      characters_.resize(dimx_ * dimy_ * 4, ' ');
-      pixels_.reserve(dimx_ * dimy_);
-
-      for (int i = 0; i < dimx_ * dimy_; ++i) {
-         pixels_.emplace_back(
-            std::string_view(characters_.data() + i * 4, 1)
-         );
-      }
+      //pool_.resize(dimx_ * dimy_ * 2, 0); // needed only when non-ascii, will be allocated on demand
+      pixels_.resize(dimx_ * dimy_);
    }
 }
 
-/// @brief Copy the contents of an image, pixel by pixel
+/// @brief Deep-copy the contents of an image, pixel by pixel
 Image::Image(const Image& rhs)
     : stencil{rhs.stencil},
       dimx_(rhs.dimx_),
       dimy_(rhs.dimy_),
-      characters_(rhs.characters_) {
-   if (dimx_ * dimy_) {
-      pixels_.reserve(dimx_ * dimy_);
-
-      for (auto& rhsp : rhs.pixels_) {
-         pixels_.emplace_back(std::string_view(
-            characters_.data() + (rhsp.get_grapheme().data() - rhs.characters_.data()),
-            rhsp.get_grapheme().size()
-         ));
-      }
-   }
-}
+      pool_(rhs.pool_),
+      pixels_(rhs.pixels_) {}
 
 /// @brief Transfer ownership from another image
 Image::Image(Image&& rhs)
     : stencil{rhs.stencil},
       dimx_(rhs.dimx_),
       dimy_(rhs.dimy_),
-      characters_(std::move(rhs.characters_)),
+      pool_(std::move(rhs.pool_)),
       pixels_(std::move(rhs.pixels_)) {
    // reset source
    rhs.stencil = {0, 0, 0, 0};
@@ -63,18 +46,8 @@ Image& Image::operator = (const Image& rhs) {
    stencil = rhs.stencil;
    dimx_ = rhs.dimx_;
    dimy_ = rhs.dimy_;
-   characters_ = rhs.characters_;
-
-   pixels_.clear();
-   pixels_.reserve(dimx_ * dimy_);
-
-   for (auto& rhsp : rhs.pixels_) {
-      pixels_.emplace_back(std::string_view(
-         characters_.data() + (rhsp.get_grapheme().data() - rhs.characters_.data()),
-         rhsp.get_grapheme().size()
-      ));
-   }
-
+   pool_ = rhs.pool_;
+   pixels_ = rhs.pixels_;
    return *this;
 }
 
@@ -83,57 +56,17 @@ Image& Image::operator = (Image&& rhs) {
    stencil = rhs.stencil;
    dimx_ = rhs.dimx_;
    dimy_ = rhs.dimy_;
-   characters_ = std::move(rhs.characters_);
+   pool_ = std::move(rhs.pool_);
    pixels_ = std::move(rhs.pixels_);
    rhs.stencil = {0, 0, 0, 0};
    rhs.dimx_ = rhs.dimy_ = 0;
    return *this;
 }
 
-/// @brief Access a character in a cell at a given position.
-/// @param x The cell position along the x-axis.
-/// @param y The cell position along the y-axis.
-/*std::string_view& Image::at(int x, int y) { // deprecated, because we aren't allowed to modify grapheme directly
-  return PixelAt(x, y).character;             // you must now explicitly use PixelAt(x,y).set_grapheme instead
-}*/
-
-/// @brief Access a character in a cell at a given position.
-/// @param x The cell position along the x-axis.
-/// @param y The cell position along the y-axis.
-const std::string_view& Image::at(int x, int y) const {
-  return PixelAt(x, y).get_grapheme();
-}
-
-/// @brief Access a cell (Pixel) at a given position.
-/// @param x The cell position along the x-axis.
-/// @param y The cell position along the y-axis.
-/*Pixel& Image::PixelAt(int x, int y) {
-  return stencil.Contain(x, y) ? pixels_[x + y*dimx_] : dev_null_pixel(); // this is very costly to do per-pixel. just check and min/max bounding boxes once before you iterate pixels
-}*/
-
-Pixel& Image::PixelAt(int x, int y) {
-   if (not stencil.Contain(x, y))
-      exit(-1); //TODO make sure to delete this branch when safety is ensured
-  return pixels_[x + y*dimx_];
-}
-
-/// @brief Access a cell (Pixel) at a given position.
-/// @param x The cell position along the x-axis.
-/// @param y The cell position along the y-axis.
-/*const Pixel& Image::PixelAt(int x, int y) const {
-  return stencil.Contain(x, y) ? pixels_[x + y*dimx_] : dev_null_pixel();
-}*/
-
-const Pixel& Image::PixelAt(int x, int y) const {
-   if (not stencil.Contain(x, y))
-      exit(-1); //TODO make sure to delete this branch when safety is ensured
-   return pixels_[x + y*dimx_];
-}
-
 /// @brief Clear all the pixels from the screen
 void Image::Clear() {
   for (auto& pixel : pixels_)
-    pixel.reset();
+    pixel.grapheme = ' ';
 }
 
 /// @brief Inserts data into the memory pool, and returns a non-owning view to it
@@ -204,11 +137,6 @@ void Pixel::set_grapheme(const std::string_view& g, Image& pixel_owner) {
      memcpy(const_cast<char*>(grapheme.data()), g.data(), g.size());
      grapheme = std::string_view(grapheme.data(), g.size());
   }
-}
-
-void Pixel::reset() {
-   PixelBase::operator = (PixelBase());
-   reset_grapheme();
 }
 
 void Pixel::copy_pixel_data(const PixelStandalone& rhs, Image& pixel_owner) {

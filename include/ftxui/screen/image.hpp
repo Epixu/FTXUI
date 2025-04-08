@@ -25,16 +25,19 @@ class Image {
   Image& operator = (const Image&);
   Image& operator = (Image&&);
 
-  // Access a character in the grid at a given position.
-  //std::string_view& at(int x, int y);
-  const std::string_view& at(int x, int y) const;
+  // Access a cell (Pixel) in the grid at a given position
+  FTXUI_FORCE_INLINE()
+  auto& PixelAt(int x, int y) {
+    return pixels_[x + y * dimx_];
+  }
 
-  // Access a cell (Pixel) in the grid at a given position.
-  Pixel& PixelAt(int x, int y);
-  const Pixel& PixelAt(int x, int y) const;
+  FTXUI_FORCE_INLINE()
+  auto& PixelAt(int x, int y) const {
+    return pixels_[x + y * dimx_];
+  }
 
-  // Get screen dimensions.
-  auto width() const { return dimx_; }
+  // Get screen dimensions
+  auto width () const { return dimx_; }
   auto height() const { return dimy_; }
 
   // Fill the image with space and default style
@@ -42,8 +45,9 @@ class Image {
 
   Box stencil;
 
-  auto& get_pool() const { return characters_; }
-  auto& get_pixels() { return pixels_; }
+  auto& get_pool  () const { return pool_;   }
+  auto& get_pixels() const { return pixels_; }
+  auto& get_pixels()       { return pixels_; }
 
   std::string_view pool_chardata(const std::string_view&);
 
@@ -57,7 +61,7 @@ class Image {
   // anyway, if memory behind the string moves on reallocation. this shouldn't really
   // happen too often - only if you push a really long grapheme (>4 bytes). it is much more efficient to reallocate this buffer, 
   // instead of allocate a new std::string per pixel every time something changes
-  std::string characters_;
+  PackedString::Pool pool_;
   void compactify(const char* oldptr);
 
   // No need of vector of vectors - these are just excess allocations
