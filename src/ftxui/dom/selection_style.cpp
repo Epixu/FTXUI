@@ -60,7 +60,7 @@ Element selectionStyleReset(Element child) {
 /// Note that the style is applied on top of the existing style.
 Decorator selectionBackgroundColor(Color foreground) {
   return selectionStyle([foreground](Pixel& pixel) {  //
-    pixel.background_color = foreground;
+    pixel.style.background_color = foreground;
   });
 }
 
@@ -68,7 +68,7 @@ Decorator selectionBackgroundColor(Color foreground) {
 /// Note that the style is applied on top of the existing style.
 Decorator selectionForegroundColor(Color foreground) {
   return selectionStyle([foreground](Pixel& pixel) {  //
-    pixel.foreground_color = foreground;
+    pixel.style.foreground_color = foreground;
   });
 }
 

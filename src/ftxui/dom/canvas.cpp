@@ -113,7 +113,7 @@ void Canvas::DrawPoint(int x, int y, bool value) {
 /// @param value whether the dot is filled or not.
 /// @param color the color of the dot.
 void Canvas::DrawPoint(int x, int y, bool value, const Color& color) {
-  DrawPoint(x, y, value, [color](Pixel& p) { p.foreground_color = color; });
+  DrawPoint(x, y, value, [color](Pixel& p) { p.style.foreground_color = color; });
 }
 
 /// @brief Draw a braille dot.
@@ -123,11 +123,10 @@ void Canvas::DrawPoint(int x, int y, bool value, const Color& color) {
 /// @param style the style of the cell.
 void Canvas::DrawPoint(int x, int y, bool value, const Stylizer& style) {
   Style(x, y, style);
-  if (value) {
+  if (value)
     DrawPointOn(x, y);
-  } else {
+  else
     DrawPointOff(x, y);
-  }
 }
 
 /// @brief Draw a braille dot.
@@ -141,12 +140,12 @@ void Canvas::DrawPointOn(int x, int y) {
   Pixel& data = pixels_[xy];
   Cell&  cell = cells_ [xy];
   if (cell.type != Cell::kBraille) {
-    data.reset_grapheme();  // 3 bytes.
+    data.grapheme = ' ';  // 3 bytes.
     cell.type = Cell::kBraille;
   }
 
-  data.character(1) |= g_map_braille[x % 2][y % 4][0];  // NOLINT
-  data.character(2) |= g_map_braille[x % 2][y % 4][1];  // NOLINT
+  data.grapheme[1] |= g_map_braille[x % 2][y % 4][0];  // NOLINT
+  data.grapheme[2] |= g_map_braille[x % 2][y % 4][1];  // NOLINT
 }
 
 /// @brief Erase a braille dot.
@@ -160,12 +159,12 @@ void Canvas::DrawPointOff(int x, int y) {
   Pixel& data = pixels_[xy];
   Cell&  cell = cells_ [xy];
   if (cell.type != Cell::kBraille) {
-    data.reset_grapheme();  // 3 byt
+    data.grapheme = ' ';  // 3 byt
     cell.type = Cell::kBraille;
   }
 
-  data.character(1) &= ~(g_map_braille[x % 2][y % 4][0]);  // NOLINT
-  data.character(2) &= ~(g_map_braille[x % 2][y % 4][1]);  // NOLINT
+  data.grapheme[1] &= ~(g_map_braille[x % 2][y % 4][0]);  // NOLINT
+  data.grapheme[2] &= ~(g_map_braille[x % 2][y % 4][1]);  // NOLINT
 }
 
 /// @brief Toggle a braille dot. A filled one will be erased, and the other will
@@ -180,12 +179,12 @@ void Canvas::DrawPointToggle(int x, int y) {
   Pixel& data = pixels_[xy];
   Cell&  cell = cells_ [xy];
   if (cell.type != Cell::kBraille) {
-    data.reset_grapheme();  // 3 byt
+    data.grapheme = ' ';  // 3 byt
     cell.type = Cell::kBraille;
   }
 
-  data.character(1) ^= g_map_braille[x % 2][y % 4][0];  // NOLINT
-  data.character(2) ^= g_map_braille[x % 2][y % 4][1];  // NOLINT
+  data.grapheme[1] ^= g_map_braille[x % 2][y % 4][0];  // NOLINT
+  data.grapheme[2] ^= g_map_braille[x % 2][y % 4][1];  // NOLINT
 }
 
 /// @brief Draw a line made of braille dots.
@@ -205,7 +204,7 @@ void Canvas::DrawPointLine(int x1, int y1, int x2, int y2) {
 /// @param color the color of the line.
 void Canvas::DrawPointLine(int x1, int y1, int x2, int y2, const Color& color) {
   DrawPointLine(x1, y1, x2, y2,
-                [color](Pixel& p) { p.foreground_color = color; });
+                [color](Pixel& p) { p.style.foreground_color = color; });
 }
 
 /// @brief Draw a line made of braille dots.
@@ -261,7 +260,7 @@ void Canvas::DrawPointCircle(int x, int y, int radius) {
 /// @param color the color of the circle.
 void Canvas::DrawPointCircle(int x, int y, int radius, const Color& color) {
   DrawPointCircle(x, y, radius,
-                  [color](Pixel& p) { p.foreground_color = color; });
+                  [color](Pixel& p) { p.style.foreground_color = color; });
 }
 
 /// @brief Draw a circle made of braille dots.
@@ -291,7 +290,7 @@ void Canvas::DrawPointCircleFilled(int x,
                                    int radius,
                                    const Color& color) {
   DrawPointCircleFilled(x, y, radius,
-                        [color](Pixel& p) { p.foreground_color = color; });
+                        [color](Pixel& p) { p.style.foreground_color = color; });
 }
 
 /// @brief Draw a filled circle made of braille dots.
@@ -327,7 +326,7 @@ void Canvas::DrawPointEllipse(int x,
                               int r2,
                               const Color& color) {
   DrawPointEllipse(x, y, r1, r2,
-                   [color](Pixel& p) { p.foreground_color = color; });
+                   [color](Pixel& p) { p.style.foreground_color = color; });
 }
 
 /// @brief Draw an ellipse made of braille dots.
@@ -391,7 +390,7 @@ void Canvas::DrawPointEllipseFilled(int x1,
                                     int r2,
                                     const Color& color) {
   DrawPointEllipseFilled(x1, y1, r1, r2,
-                         [color](Pixel& p) { p.foreground_color = color; });
+                         [color](Pixel& p) { p.style.foreground_color = color; });
 }
 
 /// @brief Draw a filled ellipse made of braille dots.
@@ -449,7 +448,7 @@ void Canvas::DrawBlock(int x, int y, bool value) {
 /// @param value whether the block is filled or not.
 /// @param color the color of the block.
 void Canvas::DrawBlock(int x, int y, bool value, const Color& color) {
-  DrawBlock(x, y, value, [color](Pixel& p) { p.foreground_color = color; });
+  DrawBlock(x, y, value, [color](Pixel& p) { p.style.foreground_color = color; });
 }
 
 /// @brief Draw a block.
@@ -479,14 +478,14 @@ void Canvas::DrawBlockOn(int x, int y) {
   Pixel& data = pixels_[xy];
   Cell&  cell = cells_ [xy];
   if (cell.type != Cell::kBlock) {
-    data.reset_grapheme();
+    data.grapheme = ' ';
     cell.type = Cell::kBlock;
   }
 
   const uint8_t bit = (x % 2) * 2 + y % 2;
-  uint8_t value = g_map_block_inversed.at(data.get_grapheme());
+  uint8_t value = g_map_block_inversed.at(data.grapheme.get_view());
   value |= 1U << bit;
-  data.set_grapheme(g_map_block[value], *this);
+  data.grapheme = g_map_block[value];
 }
 
 /// @brief Erase a block.
@@ -500,15 +499,15 @@ void Canvas::DrawBlockOff(int x, int y) {
   Pixel& data = pixels_[xy];
   Cell&  cell = cells_ [xy];
   if (cell.type != Cell::kBlock) {
-    data.reset_grapheme();
+    data.grapheme = ' ';
     cell.type = Cell::kBlock;
   }
   y /= 2;
 
   const uint8_t bit = (y % 2) * 2 + x % 2;
-  uint8_t value = g_map_block_inversed.at(data.get_grapheme());
+  uint8_t value = g_map_block_inversed.at(data.grapheme.get_view());
   value &= ~(1U << bit);
-  data.set_grapheme(g_map_block[value], *this);
+  data.grapheme = g_map_block[value];
 }
 
 /// @brief Toggle a block. If it is filled, it will be erased. If it is empty,
@@ -523,15 +522,15 @@ void Canvas::DrawBlockToggle(int x, int y) {
   Pixel& data = pixels_[xy];
   Cell&  cell = cells_ [xy];
   if (cell.type != Cell::kBlock) {
-    data.reset_grapheme();
+    data.grapheme = ' ';
     cell.type = Cell::kBlock;
   }
   y /= 2;
 
   const uint8_t bit = (y % 2) * 2 + x % 2;
-  uint8_t value = g_map_block_inversed.at(data.get_grapheme());
+  uint8_t value = g_map_block_inversed.at(data.grapheme.get_view());
   value ^= 1U << bit;
-  data.set_grapheme(g_map_block[value], *this);
+  data.grapheme = g_map_block[value];
 }
 
 /// @brief Draw a line made of block characters.
@@ -551,7 +550,7 @@ void Canvas::DrawBlockLine(int x1, int y1, int x2, int y2) {
 /// @param color the color of the line.
 void Canvas::DrawBlockLine(int x1, int y1, int x2, int y2, const Color& color) {
   DrawBlockLine(x1, y1, x2, y2,
-                [color](Pixel& p) { p.foreground_color = color; });
+                [color](Pixel& p) { p.style.foreground_color = color; });
 }
 
 /// @brief Draw a line made of block characters.
@@ -610,7 +609,7 @@ void Canvas::DrawBlockCircle(int x, int y, int radius) {
 /// @param color the color of the circle.
 void Canvas::DrawBlockCircle(int x, int y, int radius, const Color& color) {
   DrawBlockCircle(x, y, radius,
-                  [color](Pixel& p) { p.foreground_color = color; });
+                  [color](Pixel& p) { p.style.foreground_color = color; });
 }
 
 /// @brief Draw a circle made of block characters.
@@ -640,7 +639,7 @@ void Canvas::DrawBlockCircleFilled(int x,
                                    int radius,
                                    const Color& color) {
   DrawBlockCircleFilled(x, y, radius,
-                        [color](Pixel& p) { p.foreground_color = color; });
+                        [color](Pixel& p) { p.style.foreground_color = color; });
 }
 
 /// @brief Draw a filled circle made of block characters.
@@ -676,7 +675,7 @@ void Canvas::DrawBlockEllipse(int x,
                               int r2,
                               const Color& color) {
   DrawBlockEllipse(x, y, r1, r2,
-                   [color](Pixel& p) { p.foreground_color = color; });
+                   [color](Pixel& p) { p.style.foreground_color = color; });
 }
 
 /// @brief Draw an ellipse made of block characters.
@@ -742,7 +741,7 @@ void Canvas::DrawBlockEllipseFilled(int x,
                                     int r2,
                                     const Color& color) {
   DrawBlockEllipseFilled(x, y, r1, r2,
-                         [color](Pixel& p) { p.foreground_color = color; });
+                         [color](Pixel& p) { p.style.foreground_color = color; });
 }
 
 /// @brief Draw a filled ellipse made of block characters.
@@ -805,7 +804,7 @@ void Canvas::DrawText(int x,
                       int y,
                       const std::string_view& value,
                       const Color& color) {
-  DrawText(x, y, value, [color](Pixel& p) { p.foreground_color = color; });
+  DrawText(x, y, value, [color](Pixel& p) { p.style.foreground_color = color; });
 }
 
 /// @brief Draw a piece of text.
@@ -827,7 +826,7 @@ void Canvas::DrawText(int x,
     Pixel& data = pixels_[xy];
     Cell&  cell = cells_ [xy];
     cell.type = Cell::kCell;
-    data.set_grapheme(it, *this);
+    data.grapheme.copy(it, pool_);
     style(data);
     x += 2;
   }
@@ -842,7 +841,7 @@ void Canvas::DrawPixel(int x, int y, const PixelStandalone& p) {
   Pixel& data = pixels_[xy];
   Cell&  cell = cells_ [xy];
   cell.type = Cell::kCell;
-  data.copy_pixel_data(p, *this);
+  data.copy(p, pool_);
 }
 
 /// @brief Draw a predefined image, with top-left corner at the given coordinate
@@ -865,9 +864,7 @@ void Canvas::DrawImage(int x, int y, const Image& image) {
       Pixel& data = pixels_[xy];
       Cell& cell = cells_[xy];
       cell.type = Cell::kCell;
-
-      auto& rhs = image.PixelAt(dx, dy); //todo check if PixelAtUnsafe is fine here, std::min and std::max should be enough
-      data.copy_pixel_data(rhs, *this);
+      data.copy(image.PixelAt(dx, dy), pool_, image.get_pool());
     }
   }
 }
@@ -893,7 +890,7 @@ class CanvasNodeBase : public Node {
     const int x_max = std::min(c.width(), box_.x_max - box_.x_min + 1);
     for (int y = 0; y < y_max; ++y) {
       for (int x = 0; x < x_max; ++x) {
-        screen.PixelAt(box_.x_min + x, box_.y_min + y).copy_pixel_data(c.PixelAt(x, y), screen); //todo check if PixelAtUnsafe is fine here, std::min and std::max before loop should be better
+        screen.PixelAt(box_.x_min + x, box_.y_min + y).copy(c.PixelAt(x, y), screen.get_pool(), c.get_pool());
       }
     }
   }

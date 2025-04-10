@@ -38,15 +38,17 @@ add_library(screen
   include/ftxui/screen/color_info.hpp
   include/ftxui/screen/color_info.inl
   include/ftxui/screen/image.hpp
+  include/ftxui/screen/image_simple.hpp
   include/ftxui/screen/pixel.hpp
   include/ftxui/screen/screen.hpp
   include/ftxui/screen/string.hpp
+  include/ftxui/screen/string.inl
   src/ftxui/screen/box.cpp
   #src/ftxui/screen/color.cpp
   #src/ftxui/screen/color_info.cpp
   src/ftxui/screen/image.cpp
   src/ftxui/screen/screen.cpp
-  src/ftxui/screen/string.cpp
+  #src/ftxui/screen/string.cpp
   src/ftxui/screen/terminal.cpp
   src/ftxui/screen/util.hpp
 )
@@ -68,6 +70,8 @@ add_library(dom
   src/ftxui/dom/box_helper.cpp
   src/ftxui/dom/box_helper.hpp
   src/ftxui/dom/canvas.cpp
+  src/ftxui/dom/image.cpp
+  src/ftxui/dom/image_simple.cpp
   src/ftxui/dom/clear_under.cpp
   src/ftxui/dom/color.cpp
   src/ftxui/dom/composite_decorator.cpp

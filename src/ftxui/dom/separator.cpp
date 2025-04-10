@@ -42,8 +42,8 @@ class Separator : public Node {
     for (int y = box_.y_min; y <= box_.y_max; ++y) {
       for (int x = box_.x_min; x <= box_.x_max; ++x) {
         Pixel& pixel = screen.PixelAt(x, y);
-        pixel.set_grapheme(value_, screen);
-        pixel.automerge = true;
+        pixel.grapheme.copy(value_, screen.get_pool());
+        pixel.style.automerge = true;
       }
     }
   }
@@ -68,8 +68,8 @@ class SeparatorAuto : public Node {
     for (int y = box_.y_min; y <= box_.y_max; ++y) {
       for (int x = box_.x_min; x <= box_.x_max; ++x) {
         Pixel& pixel = screen.PixelAt(x, y);
-        pixel.set_grapheme(c, screen);
-        pixel.automerge = true;
+        pixel.grapheme = c;
+        pixel.style.automerge = true;
       }
     }
   }
@@ -81,7 +81,7 @@ class SeparatorWithPixel : public SeparatorAuto {
  public:
   explicit SeparatorWithPixel(PixelStandalone pixel)
       : SeparatorAuto(LIGHT), pixel_(std::move(pixel)) {
-    pixel_.automerge = true;
+    pixel_.style.automerge = true;
   }
   void Render(Screen& screen) override {
     for (int y = box_.y_min; y <= box_.y_max; ++y) {
@@ -89,10 +89,10 @@ class SeparatorWithPixel : public SeparatorAuto {
          auto& rhs = screen.PixelAt(x, y);
          
          rhs.style = pixel_.style;
-         rhs.background_color = pixel_.background_color;
-         rhs.foreground_color = pixel_.foreground_color;
-         rhs.hyperlink = pixel_.hyperlink;
-         rhs.set_grapheme(pixel_.get_grapheme(), screen);
+         rhs.style.background_color = pixel_.style.background_color;
+         rhs.style.foreground_color = pixel_.style.foreground_color;
+         rhs.style.hyperlink = pixel_.style.hyperlink;
+         rhs.grapheme.copy(pixel_.grapheme, screen.get_pool());
       }
     }
   }
@@ -460,9 +460,8 @@ Element separatorHSelector(float left,
     }
 
     void Render(Screen& screen) override {
-      if (box_.y_max < box_.y_min) {
+      if (box_.y_max < box_.y_min)
         return;
-      }
 
       // This are the two location with an empty demi-cell.
       int demi_cell_left = int(left_ * 2.F - 1.F);    // NOLINT
@@ -478,17 +477,17 @@ Element separatorHSelector(float left,
         const bool b_empty = demi_cell_left == b || demi_cell_right == b;
 
         if (!a_empty && !b_empty) {
-          pixel.set_grapheme("─", screen);
-          pixel.automerge = true;
+          pixel.grapheme = "─";
+          pixel.style.automerge = true;
         } else {
-          pixel.set_grapheme(a_empty ? "╶" : "╴", screen);  // NOLINT
-          pixel.automerge = false;
+          pixel.grapheme = a_empty ? "╶" : "╴";  // NOLINT
+          pixel.style.automerge = false;
         }
 
         if (demi_cell_left <= a && b <= demi_cell_right) {
-          pixel.foreground_color = selected_color_;
+          pixel.style.foreground_color = selected_color_;
         } else {
-          pixel.foreground_color = unselected_color_;
+          pixel.style.foreground_color = unselected_color_;
         }
       }
     }
@@ -530,9 +529,8 @@ Element separatorVSelector(float up,
     }
 
     void Render(Screen& screen) override {
-      if (box_.x_max < box_.x_min) {
+      if (box_.x_max < box_.x_min)
         return;
-      }
 
       // This are the two location with an empty demi-cell.
       const int demi_cell_up = int(up_ * 2 - 1);
@@ -548,17 +546,17 @@ Element separatorVSelector(float up,
         const bool b_empty = demi_cell_up == b || demi_cell_down == b;
 
         if (!a_empty && !b_empty) {
-          pixel.set_grapheme("│", screen);
-          pixel.automerge = true;
+          pixel.grapheme = "│";
+          pixel.style.automerge = true;
         } else {
-          pixel.set_grapheme(a_empty ? "╷" : "╵", screen);  // NOLINT
-          pixel.automerge = false;
+          pixel.grapheme = a_empty ? "╷" : "╵";  // NOLINT
+          pixel.style.automerge = false;
         }
 
         if (demi_cell_up <= a && b <= demi_cell_down) {
-          pixel.foreground_color = selected_color_;
+          pixel.style.foreground_color = selected_color_;
         } else {
-          pixel.foreground_color = unselected_color_;
+          pixel.style.foreground_color = unselected_color_;
         }
       }
     }

@@ -903,9 +903,9 @@ bool ScreenInteractive::HandleSelection(bool handled, Event event) {
 // private
 // NOLINTNEXTLINE
 void ScreenInteractive::Draw(Component component) {
-  if (frame_valid_) {
+  if (frame_valid_)
     return;
-  }
+
   auto document = component->Render();
   int dimx = 0;
   int dimy = 0;
@@ -941,23 +941,13 @@ void ScreenInteractive::Draw(Component component) {
     std::cout << "\033[H";  // move cursor to home position
   }
 
-  // Resize the screen if needed.
+  // Resize the screen if needed, reusing as much memory as possible
   if (resized) {
     dimx_ = dimx;
     dimy_ = dimy;
     cursor_.x = dimx_ - 1;
     cursor_.y = dimy_ - 1;
-
-    characters_.clear();
-    characters_.resize(dimx_ * dimy_ * 4, ' ');
-    pixels_.clear();
-    pixels_.reserve(dimx_ * dimy_);
-    
-    for (int i = 0; i < dimx_ * dimy_; ++i) {
-       pixels_.emplace_back(
-          std::string_view(characters_.data() + i * 4, 1)
-       );
-    }
+    pixels_.resize(dimx_ * dimy_);
   }
 
   // Periodically request the terminal emulator the frame position relative to

@@ -40,13 +40,12 @@ Element vscroll_indicator(Element child) {
       const Box& stencil = screen.stencil;
 
       const int size_inner = box_.y_max - box_.y_min;
-      if (size_inner <= 0) {
+      if (size_inner <= 0)
         return;
-      }
+
       const int size_outter = stencil.y_max - stencil.y_min + 1;
-      if (size_outter >= size_inner) {
+      if (size_outter >= size_inner)
         return;
-      }
 
       int size = 2 * size_outter * size_outter / size_inner;
       size = std::max(size, 1);
@@ -63,7 +62,7 @@ Element vscroll_indicator(Element child) {
         const bool down = (start_y <= y_down) && (y_down <= start_y + size);
 
         const std::string_view c = up ? (down ? "┃" : "╹") : (down ? "╻" : " ");  // NOLINT
-        screen.PixelAt(x, y).set_grapheme(c, screen);
+        screen.PixelAt(x, y).grapheme = c;
       }
     }
   };
@@ -95,13 +94,12 @@ Element hscroll_indicator(Element child) {
       const Box& stencil = screen.stencil;
 
       const int size_inner = box_.x_max - box_.x_min;
-      if (size_inner <= 0) {
+      if (size_inner <= 0)
         return;
-      }
+
       const int size_outter = stencil.x_max - stencil.x_min + 1;
-      if (size_outter >= size_inner) {
+      if (size_outter >= size_inner)
         return;
-      }
 
       int size = 2 * size_outter * size_outter / size_inner;
       size = std::max(size, 1);
@@ -118,7 +116,7 @@ Element hscroll_indicator(Element child) {
         const bool right = (start_x <= x_right) && (x_right <= start_x + size);
 
         const std::string_view c = left ? (right ? "─" : "╴") : (right ? "╶" : " ");  // NOLINT
-        screen.PixelAt(x, y).set_grapheme(c, screen);
+        screen.PixelAt(x, y).grapheme = c;
       }
     }
   };

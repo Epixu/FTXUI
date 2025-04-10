@@ -57,29 +57,29 @@ class ResizeDecorator : public NodeDecorator {
     if (resize_left_) {
       for (int y = box_.y_min; y <= box_.y_max; ++y) {
         auto& cell = screen.PixelAt(box_.x_min, y);
-        cell.foreground_color = color_;
-        cell.automerge = false;
+        cell.style.foreground_color = color_;
+        cell.style.automerge = false;
       }
     }
     if (resize_right_) {
       for (int y = box_.y_min; y <= box_.y_max; ++y) {
         auto& cell = screen.PixelAt(box_.x_max, y);
-        cell.foreground_color = color_;
-        cell.automerge = false;
+        cell.style.foreground_color = color_;
+        cell.style.automerge = false;
       }
     }
     if (resize_top_) {
       for (int x = box_.x_min; x <= box_.x_max; ++x) {
         auto& cell = screen.PixelAt(x, box_.y_min);
-        cell.foreground_color = color_;
-        cell.automerge = false;
+        cell.style.foreground_color = color_;
+        cell.style.automerge = false;
       }
     }
     if (resize_down_) {
       for (int x = box_.x_min; x <= box_.x_max; ++x) {
         auto& cell = screen.PixelAt(x, box_.y_max);
-        cell.foreground_color = color_;
-        cell.automerge = false;
+        cell.style.foreground_color = color_;
+        cell.style.automerge = false;
       }
     }
   }

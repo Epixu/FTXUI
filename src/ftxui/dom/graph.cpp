@@ -55,7 +55,7 @@ class Graph : public Node {
         const int yy = 2 * y;
         int i_1 = yy < height_1 ? 0 : yy == height_1 ? 3 : 6;  // NOLINT
         int i_2 = yy < height_2 ? 0 : yy == height_2 ? 1 : 2;  // NOLINT
-        screen.PixelAt(x, y).set_grapheme(charset[i_1 + i_2], screen);                  // NOLINT
+        screen.PixelAt(x, y).grapheme = charset[i_1 + i_2]; // NOLINT
       }
     }
   }

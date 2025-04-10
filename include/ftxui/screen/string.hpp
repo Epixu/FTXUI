@@ -28,4 +28,6 @@ std::vector<int> CellToGlyphIndex(const std::string_view& input);
 
 }  // namespace ftxui
 
+#include "string.inl"
+
 #endif /* end of include guard: FTXUI_SCREEN_STRING_HPP */

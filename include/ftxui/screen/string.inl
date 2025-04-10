@@ -8,8 +8,9 @@
 // - Markus Kuhn -- 2007-05-26 (Unicode 5.0)
 //   http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 // Thanks you!
-
+#pragma once
 #include "ftxui/screen/string.hpp"
+#include "ftxui/screen/packed_string.hpp"
 
 #include <array>    // for array
 #include <cstddef>  // for size_t
@@ -19,7 +20,62 @@
 #include <vector>
 
 #include "ftxui/screen/deprecated.hpp"       // for wchar_width, wstring_width
-#include "ftxui/screen/string_internal.hpp"  // for WordBreakProperty, EatCodePoint, CodepointToWordBreakProperty, GlyphCount, GlyphIterate, GlyphNext, GlyphPrevious, IsCombining, IsControl, IsFullWidth, Utf8ToWordBreakProperty
+//#include "ftxui/screen/string_internal.hpp"  // for WordBreakProperty, EatCodePoint, CodepointToWordBreakProperty, GlyphCount, GlyphIterate, GlyphNext, GlyphPrevious, IsCombining, IsControl, IsFullWidth, Utf8ToWordBreakProperty
+
+namespace ftxui {
+
+// Moved from ftxui/screen/string_internal.hpp
+bool EatCodePoint(const std::string_view& input,
+                  size_t start,
+                  size_t* end,
+                  uint32_t* ucs);
+bool EatCodePoint(const std::wstring_view& input,
+                  size_t start,
+                  size_t* end,
+                  uint32_t* ucs);
+
+bool IsCombining(uint32_t ucs);
+bool IsFullWidth(uint32_t ucs);
+bool IsControl(uint32_t ucs);
+
+size_t GlyphPrevious(const std::string_view& input, size_t start);
+size_t GlyphNext(const std::string_view& input, size_t start);
+
+// Return the index in the |input| string of the glyph at |glyph_offset|,
+// starting at |start|
+size_t GlyphIterate(const std::string_view& input,
+                    int glyph_offset,
+                    size_t start = 0);
+
+// Returns the number of glyphs in |input|.
+int GlyphCount(const std::string_view& input);
+
+// Properties from:
+// https://www.unicode.org/Public/UCD/latest/ucd/auxiliary/WordBreakProperty.txt
+enum class WordBreakProperty : int8_t {
+  ALetter,
+  CR,
+  Double_Quote,
+  Extend,
+  ExtendNumLet,
+  Format,
+  Hebrew_Letter,
+  Katakana,
+  LF,
+  MidLetter,
+  MidNum,
+  MidNumLet,
+  Newline,
+  Numeric,
+  Regional_Indicator,
+  Single_Quote,
+  WSegSpace,
+  ZWJ,
+};
+WordBreakProperty CodepointToWordBreakProperty(uint32_t codepoint);
+std::vector<WordBreakProperty> Utf8ToWordBreakProperty(const std::string& input);
+bool IsWordBreakingCharacter(const std::string_view& input, size_t glyph_index);
+}
 
 namespace {
 
@@ -1103,9 +1159,8 @@ constexpr auto g_extend_characters{[]() constexpr {
 // Find a codepoint inside a sorted list of Interval.
 template <size_t N>
 bool Bisearch(uint32_t ucs, const std::array<Interval, N>& table) {
-  if (ucs < table.front().first || ucs > table.back().last) {  // NOLINT
+  if (ucs < table.front().first || ucs > table.back().last)  // NOLINT
     return false;
-  }
 
   int min = 0;
   int max = N - 1;
@@ -1126,9 +1181,8 @@ bool Bisearch(uint32_t ucs, const std::array<Interval, N>& table) {
 // Find a value inside a sorted list of Interval + property.
 template <class C, size_t N>
 bool Bisearch(uint32_t ucs, const std::array<C, N>& table, C* out) {
-  if (ucs < table.front().first || ucs > table.back().last) {  // NOLINT
+  if (ucs < table.front().first || ucs > table.back().last)  // NOLINT
     return false;
-  }
 
   int min = 0;
   int max = N - 1;
@@ -1147,18 +1201,16 @@ bool Bisearch(uint32_t ucs, const std::array<C, N>& table, C* out) {
   return false;
 }
 
+FTXUI_FORCE_INLINE()
 int codepoint_width(uint32_t ucs) {
-  if (ftxui::IsControl(ucs)) {
+  if (ftxui::IsControl(ucs))
     return -1;
-  }
 
-  if (ftxui::IsCombining(ucs)) {
+  if (ftxui::IsCombining(ucs))
     return 0;
-  }
 
-  if (ftxui::IsFullWidth(ucs)) {
+  if (ftxui::IsFullWidth(ucs))
     return 2;
-  }
 
   return 1;
 }
@@ -1171,10 +1223,7 @@ namespace ftxui {
 // one codepoint. Put the codepoint into |ucs|. Start at |start| and update
 // |end| to represent the beginning of the next byte to eat for consecutive
 // executions.
-bool EatCodePoint(const std::string_view& input,
-                  size_t start,
-                  size_t* end,
-                  uint32_t* ucs) {
+inline bool EatCodePoint(const std::string_view& input, size_t start, size_t* end, uint32_t* ucs) {
   if (start >= input.size()) {
     *end = start + 1;
     return false;
@@ -1241,7 +1290,7 @@ bool EatCodePoint(const std::string_view& input,
 // one codepoint. Put the codepoint into |ucs|. Start at |start| and update
 // |end| to represent the beginning of the next byte to eat for consecutive
 // executions.
-bool EatCodePoint(const std::wstring_view& input,
+inline bool EatCodePoint(const std::wstring_view& input,
                   size_t start,
                   size_t* end,
                   uint32_t* ucs) {
@@ -1279,10 +1328,12 @@ bool EatCodePoint(const std::wstring_view& input,
   return true;
 }
 
+FTXUI_FORCE_INLINE()
 bool IsCombining(uint32_t ucs) {
   return Bisearch(ucs, g_extend_characters);
 }
 
+FTXUI_FORCE_INLINE()
 bool IsFullWidth(uint32_t ucs) {
   if (ucs < 0x0300)  // Quick path: // NOLINT
     return false;
@@ -1290,59 +1341,61 @@ bool IsFullWidth(uint32_t ucs) {
   return Bisearch(ucs, g_full_width_characters);
 }
 
+FTXUI_FORCE_INLINE()
 bool IsControl(uint32_t ucs) {
-  if (ucs == 0) {
+  if (ucs == 0)
     return true;
-  }
+
   if (ucs < 32) {  // NOLINT
     const uint32_t LINE_FEED = 10;
     return ucs != LINE_FEED;
   }
-  if (ucs >= 0x7f && ucs < 0xa0) {  // NOLINT
+
+  if (ucs >= 0x7f && ucs < 0xa0)  // NOLINT
     return true;
-  }
+
   return false;
 }
 
+FTXUI_FORCE_INLINE()
 WordBreakProperty CodepointToWordBreakProperty(uint32_t codepoint) {
   WordBreakPropertyInterval interval = {0, 0, WBP::ALetter};
   std::ignore = Bisearch(codepoint, g_word_break_intervals, &interval);
   return interval.property;
 }
 
+FTXUI_FORCE_INLINE()
 int wchar_width(wchar_t ucs) {
   return codepoint_width(uint32_t(ucs));
 }
 
+FTXUI_FORCE_INLINE()
 int wstring_width(const std::wstring_view& text) {
   int width = 0;
 
   for (const wchar_t& it : text) {
     const int w = wchar_width(it);
-    if (w < 0) {
+    if (w < 0)
       return -1;
-    }
     width += w;
   }
   return width;
 }
 
+FTXUI_FORCE_INLINE()
 int string_width(const std::string_view& input) {
   int width = 0;
   size_t start = 0;
   while (start < input.size()) {
     uint32_t codepoint = 0;
-    if (!EatCodePoint(input, start, &start, &codepoint)) {
+    if (!EatCodePoint(input, start, &start, &codepoint))
       continue;
-    }
 
-    if (IsControl(codepoint)) {
+    if (IsControl(codepoint))
       continue;
-    }
 
-    if (IsCombining(codepoint)) {
+    if (IsCombining(codepoint))
       continue;
-    }
 
     if (IsFullWidth(codepoint)) {
       width += 2;
@@ -1354,7 +1407,7 @@ int string_width(const std::string_view& input) {
   return width;
 }
 
-std::vector<std::string> Utf8ToGlyphs(const std::string_view& input) {
+inline std::vector<std::string> Utf8ToGlyphs(const std::string_view& input) {
   std::vector<std::string> out;
   out.reserve(input.size());
   size_t start = 0;
@@ -1370,15 +1423,13 @@ std::vector<std::string> Utf8ToGlyphs(const std::string_view& input) {
     start = end;
 
     // Ignore control characters.
-    if (IsControl(codepoint)) {
+    if (IsControl(codepoint))
       continue;
-    }
 
     // Combining characters are put with the previous glyph they are modifying.
     if (IsCombining(codepoint)) {
-      if (!out.empty()) {
+      if (!out.empty())
         out.back() += append;
-      }
       continue;
     }
 
@@ -1396,31 +1447,31 @@ std::vector<std::string> Utf8ToGlyphs(const std::string_view& input) {
   return out;
 }
 
+FTXUI_FORCE_INLINE()
 size_t GlyphPrevious(const std::string_view& input, size_t start) {
   while (true) {
-    if (start == 0) {
+    if (start == 0)
       return 0;
-    }
+
     start--;
 
     // Skip the UTF8 continuation bytes.
-    if ((input[start] & 0b1100'0000) == 0b1000'0000) {
+    if ((input[start] & 0b1100'0000) == 0b1000'0000)
       continue;
-    }
 
     uint32_t codepoint = 0;
     size_t end = 0;
     const bool eaten = EatCodePoint(input, start, &end, &codepoint);
 
     // Ignore invalid, control characters and combining characters.
-    if (!eaten || IsControl(codepoint) || IsCombining(codepoint)) {
+    if (!eaten || IsControl(codepoint) || IsCombining(codepoint))
       continue;
-    }
 
     return start;
   }
 }
 
+FTXUI_FORCE_INLINE()
 size_t GlyphNext(const std::string_view& input, size_t start) {
   bool glyph_found = false;
   while (start < input.size()) {
@@ -1436,9 +1487,8 @@ size_t GlyphNext(const std::string_view& input, size_t start) {
 
     // We eat the beginning of the next glyph. If we are eating the one
     // requested, return its start position immediately.
-    if (glyph_found) {
+    if (glyph_found)
       return static_cast<int>(start);
-    }
 
     // Otherwise, skip this glyph and iterate:
     glyph_found = true;
@@ -1447,6 +1497,7 @@ size_t GlyphNext(const std::string_view& input, size_t start) {
   return static_cast<int>(input.size());
 }
 
+FTXUI_FORCE_INLINE()
 size_t GlyphIterate(const std::string_view& input, int glyph_offset, size_t start) {
   if (glyph_offset >= 0) {
     for (int i = 0; i < glyph_offset; ++i) {
@@ -1461,7 +1512,7 @@ size_t GlyphIterate(const std::string_view& input, int glyph_offset, size_t star
   }
 }
 
-std::vector<int> CellToGlyphIndex(const std::string_view& input) {
+inline std::vector<int> CellToGlyphIndex(const std::string_view& input) {
   int x = -1;
   std::vector<int> out;
   out.reserve(input.size());
@@ -1473,9 +1524,8 @@ std::vector<int> CellToGlyphIndex(const std::string_view& input) {
     start = end;
 
     // Ignore invalid / control characters.
-    if (!eaten || IsControl(codepoint)) {
+    if (!eaten || IsControl(codepoint))
       continue;
-    }
 
     // Combining characters are put with the previous glyph they are modifying.
     if (IsCombining(codepoint)) {
@@ -1502,6 +1552,7 @@ std::vector<int> CellToGlyphIndex(const std::string_view& input) {
   return out;
 }
 
+FTXUI_FORCE_INLINE()
 int GlyphCount(const std::string_view& input) {
   int size = 0;
   size_t start = 0;
@@ -1512,16 +1563,14 @@ int GlyphCount(const std::string_view& input) {
     start = end;
 
     // Ignore invalid characters:
-    if (!eaten || IsControl(codepoint)) {
+    if (!eaten || IsControl(codepoint))
       continue;
-    }
 
     // Ignore combining characters, except when they don't have a preceding to
     // combine with.
     if (IsCombining(codepoint)) {
-      if (size == 0) {
+      if (size == 0)
         size++;
-      }
       continue;
     }
 
@@ -1530,8 +1579,7 @@ int GlyphCount(const std::string_view& input) {
   return size;
 }
 
-std::vector<WordBreakProperty> Utf8ToWordBreakProperty(
-    const std::string_view& input) {
+inline std::vector<WordBreakProperty> Utf8ToWordBreakProperty(const std::string_view& input) {
   std::vector<WordBreakProperty> out;
   out.reserve(input.size());
   size_t start = 0;
@@ -1545,14 +1593,12 @@ std::vector<WordBreakProperty> Utf8ToWordBreakProperty(
     start = end;
 
     // Ignore control characters.
-    if (IsControl(codepoint)) {
+    if (IsControl(codepoint))
       continue;
-    }
 
     // Ignore combining characters.
-    if (IsCombining(codepoint)) {
+    if (IsCombining(codepoint))
       continue;
-    }
 
     WordBreakPropertyInterval interval = {0, 0, WBP::ALetter};
     std::ignore = Bisearch(codepoint, g_word_break_intervals, &interval);
@@ -1562,7 +1608,7 @@ std::vector<WordBreakProperty> Utf8ToWordBreakProperty(
 }
 
 /// Convert a UTF8 std::string into a std::wstring.
-std::string to_string(const std::wstring_view& s) {
+inline std::string to_string(const std::wstring_view& s) {
   std::string out;
 
   size_t i = 0;
@@ -1634,7 +1680,7 @@ std::string to_string(const std::wstring_view& s) {
 }
 
 /// Convert a std::wstring into a UTF8 std::string.
-std::wstring to_wstring(const std::string_view& s) {
+inline std::wstring to_wstring(const std::string_view& s) {
   std::wstring out;
 
   size_t i = 0;

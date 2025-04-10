@@ -103,23 +103,22 @@ class Gauge : public Node {
     // Draw the progress bar horizontally.
     {
       const float progress = invert ? 1.F - progress_ : progress_;
-      const auto limit =
-          float(box_.x_min) + progress * float(box_.x_max - box_.x_min + 1);
+      const auto limit = float(box_.x_min) + progress * float(box_.x_max - box_.x_min + 1);
       const int limit_int = static_cast<int>(limit);
       int x = box_.x_min;
       while (x < limit_int) {
-        screen.PixelAt(x++, y).set_grapheme(charset_horizontal[9], screen);  // NOLINT
+        screen.PixelAt(x++, y).grapheme = charset_horizontal[9];  // NOLINT
       }
       // NOLINTNEXTLINE
-      screen.PixelAt(x++, y).set_grapheme(charset_horizontal[int(9 * (limit - limit_int))], screen);
+      screen.PixelAt(x++, y).grapheme = charset_horizontal[int(9 * (limit - limit_int))];
       while (x <= box_.x_max) {
-        screen.PixelAt(x++, y).set_grapheme(charset_horizontal[0], screen);
+        screen.PixelAt(x++, y).grapheme = charset_horizontal[0];
       }
     }
 
     if (invert) {
       for (int x = box_.x_min; x <= box_.x_max; x++) {
-        screen.PixelAt(x, y).inverted ^= true;
+        screen.PixelAt(x, y).style.inverted ^= true;
       }
     }
   }
@@ -138,18 +137,18 @@ class Gauge : public Node {
       const int limit_int = static_cast<int>(limit);
       int y = box_.y_min;
       while (y < limit_int) {
-        screen.PixelAt(x, y++).set_grapheme(charset_vertical[8], screen);  // NOLINT
+        screen.PixelAt(x, y++).grapheme = charset_vertical[8];  // NOLINT
       }
       // NOLINTNEXTLINE
-      screen.PixelAt(x, y++).set_grapheme(charset_vertical[int(8 * (limit - limit_int))], screen);
+      screen.PixelAt(x, y++).grapheme = charset_vertical[int(8 * (limit - limit_int))];
       while (y <= box_.y_max) {
-        screen.PixelAt(x, y++).set_grapheme(charset_vertical[0], screen);
+        screen.PixelAt(x, y++).grapheme = charset_vertical[0];
       }
     }
 
     if (invert) {
       for (int y = box_.y_min; y <= box_.y_max; y++) {
-        screen.PixelAt(x, y).inverted ^= true;
+        screen.PixelAt(x, y).style.inverted ^= true;
       }
     }
   }

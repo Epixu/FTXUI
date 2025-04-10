@@ -15,6 +15,7 @@
 #include "ftxui/screen/box.hpp"
 #include "ftxui/screen/color.hpp"
 #include "ftxui/screen/terminal.hpp"
+#include "ftxui/screen/image_simple.hpp"
 #include "ftxui/util/ref.hpp"
 
 namespace ftxui {
@@ -91,6 +92,12 @@ Element emptyElement();
 Element canvas(ConstRef<Canvas>);
 Element canvas(int width, int height, std::function<void(Canvas&)>);
 Element canvas(std::function<void(Canvas&)>);
+Element image(ConstRef<Image>);
+Element image(int width, int height, std::function<void(Image&)>);
+Element image(std::function<void(Image&)>);
+Element image_simple(ConstRef<ImageSimple>);
+Element image_simple(int width, int height, std::function<void(ImageSimple&)>);
+Element image_simple(std::function<void(ImageSimple&)>);
 
 // -- Decorator ---
 Element bold(Element);

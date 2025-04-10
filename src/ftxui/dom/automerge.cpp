@@ -22,7 +22,7 @@ Element automerge(Element child) {
     void Render(Screen& screen) override {
       for (int y = box_.y_min; y <= box_.y_max; ++y) {
         for (int x = box_.x_min; x <= box_.x_max; ++x) {
-          screen.PixelAt(x, y).automerge = true;
+          screen.PixelAt(x, y).style.automerge = true;
         }
       }
       Node::Render(screen);

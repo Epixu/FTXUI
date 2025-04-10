@@ -32,12 +32,10 @@ class Text : public Node {
   }
 
   void Select(Selection& selection) override {
-    if (Box::Intersection(selection.GetBox(), box_).IsEmpty()) {
+    if (Box::Intersection(selection.GetBox(), box_).IsEmpty())
       return;
-    }
 
     const Selection selection_saturated = selection.SaturateHorizontal(box_);
-
     has_selection = true;
     selection_start_ = selection_saturated.GetBox().x_min;
     selection_end_ = selection_saturated.GetBox().x_max;
@@ -45,12 +43,12 @@ class Text : public Node {
     std::stringstream ss;
     int x = box_.x_min;
     for (const auto& cell : Utf8ToGlyphs(text_)) {
-      if (cell == "\n") {
+      if (cell == "\n")
         continue;
-      }
-      if (selection_start_ <= x && x <= selection_end_) {
+
+      if (selection_start_ <= x && x <= selection_end_)
         ss << cell;
-      }
+
       x++;
     }
     selection.AddPart(ss.str(), box_.y_min, selection_start_, selection_end_);
@@ -70,7 +68,7 @@ class Text : public Node {
       if (cell == "\n")
         continue;
 
-      screen.PixelAt(x, y).set_grapheme(cell, screen);
+      screen.PixelAt(x, y).grapheme.copy(cell, screen.get_pool());
 
       if (has_selection) {
         auto selectionTransform = screen.GetSelectionStyle();
@@ -103,14 +101,14 @@ class VText : public Node {
   void Render(Screen& screen) override {
     const int x = box_.x_min;
     int y = box_.y_min;
-    if (x + width_ - 1 > box_.x_max) {
+    if (x + width_ - 1 > box_.x_max)
       return;
-    }
+
     for (const auto& it : Utf8ToGlyphs(text_)) {
       if (y > box_.y_max)
         return;
 
-      screen.PixelAt(x, y).set_grapheme(it, screen);
+      screen.PixelAt(x, y).grapheme.copy(it, screen.get_pool());
       y += 1;
     }
   }

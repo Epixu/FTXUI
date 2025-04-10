@@ -79,7 +79,7 @@ class Screen : public Image {
 
   // The current selection style. This is overridden by various dom elements.
   SelectionStyle selection_style_ = [](Pixel& pixel) {
-    pixel.inverted ^= true;
+    pixel.style.inverted ^= true;
   };
 
   void UpgradeLeftRight(Pixel& left, Pixel& right);

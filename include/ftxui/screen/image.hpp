@@ -19,8 +19,8 @@ class Image {
   // Constructors:
   Image() = delete;
   Image(int dimx, int dimy);
-  Image(const Image&);
-  Image(Image&&);
+  explicit Image(const Image&);
+  explicit Image(Image&&);
 
   Image& operator = (const Image&);
   Image& operator = (Image&&);
@@ -46,10 +46,9 @@ class Image {
   Box stencil;
 
   auto& get_pool  () const { return pool_;   }
+  auto& get_pool  ()       { return pool_;   }
   auto& get_pixels() const { return pixels_; }
   auto& get_pixels()       { return pixels_; }
-
-  std::string_view pool_chardata(const std::string_view&);
 
  protected:
   int dimx_;
@@ -62,7 +61,6 @@ class Image {
   // happen too often - only if you push a really long grapheme (>4 bytes). it is much more efficient to reallocate this buffer, 
   // instead of allocate a new std::string per pixel every time something changes
   PackedString::Pool pool_;
-  void compactify(const char* oldptr);
 
   // No need of vector of vectors - these are just excess allocations
   // just index linearly: i = x + y*width

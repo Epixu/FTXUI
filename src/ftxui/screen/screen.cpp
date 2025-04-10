@@ -6,6 +6,7 @@
 #include <iostream>  // for operator<<, stringstream, basic_ostream, flush, cout, ostream
 #include <limits>
 #include <map>      // for _Rb_tree_const_iterator, map, operator!=, operator==
+#include <unordered_map>      // for _Rb_tree_const_iterator, map, operator!=, operator==
 #include <sstream>  // IWYU pragma: keep
 #include <utility>  // for pair
 
@@ -74,44 +75,44 @@ void UpdatePixelStyle(const Screen* screen,
                       const Pixel* next) {
    if (!next) {
         // See https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
-        if (FTXUI_UNLIKELY(0 != prev->hyperlink)) {
+        if (FTXUI_UNLIKELY(0 != prev->style.hyperlink)) {
           ss << "\x1B]8;;" << screen->Hyperlink(0) << "\x1B\\";
         }
 
         // Bold
-        if (FTXUI_UNLIKELY(prev->bold | prev->dim)) {
+        if (FTXUI_UNLIKELY(prev->style.bold | prev->style.dim)) {
           // BOLD_AND_DIM_RESET:
-          ss << (prev->bold || prev->dim ? "\x1B[22m" : "");
+          ss << (prev->style.bold || prev->style.dim ? "\x1B[22m" : "");
         }
 
         // Underline
-        if (FTXUI_UNLIKELY(0 != prev->underlined ||
-                           0 != prev->underlined_double)) {
+        if (FTXUI_UNLIKELY(0 != prev->style.underlined ||
+                           0 != prev->style.underlined_double)) {
           ss << "\x1B[24m";  // UNDERLINE_RESET
         }
 
         // Blink
-        if (FTXUI_UNLIKELY(0 != prev->blink)) {
+        if (FTXUI_UNLIKELY(0 != prev->style.blink)) {
           ss << "\x1B[25m";  // BLINK_RESET
         }
 
         // Inverted
-        if (FTXUI_UNLIKELY(0 != prev->inverted)) {
+        if (FTXUI_UNLIKELY(0 != prev->style.inverted)) {
           ss << "\x1B[27m";  // INVERTED_RESET
         }
 
         // Italics
-        if (FTXUI_UNLIKELY(0 != prev->italic)) {
+        if (FTXUI_UNLIKELY(0 != prev->style.italic)) {
           ss << "\x1B[23m";  // ITALIC_RESET
         }
 
         // StrikeThrough
-        if (FTXUI_UNLIKELY(0 != prev->strikethrough)) {
+        if (FTXUI_UNLIKELY(0 != prev->style.strikethrough)) {
           ss << "\x1B[29m";  // CROSSED_OUT_RESET
         }
 
-        if (FTXUI_UNLIKELY(Color(Color::Default) != prev->foreground_color ||
-                           Color(Color::Default) != prev->background_color)) {
+        if (FTXUI_UNLIKELY(Color(Color::Default) != prev->style.foreground_color ||
+                           Color(Color::Default) != prev->style.background_color)) {
           ss << "\x1B[" + Color(Color::Default).Print(false) + "m";
           ss << "\x1B[" + Color(Color::Default).Print(true) + "m";
         }
@@ -121,107 +122,107 @@ void UpdatePixelStyle(const Screen* screen,
 
    if (!prev) {
      // See https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
-     if (FTXUI_UNLIKELY(next->hyperlink != 0)) {
-       ss << "\x1B]8;;" << screen->Hyperlink(next->hyperlink) << "\x1B\\";
+     if (FTXUI_UNLIKELY(next->style.hyperlink != 0)) {
+       ss << "\x1B]8;;" << screen->Hyperlink(next->style.hyperlink) << "\x1B\\";
      }
 
      // Bold
-     if (FTXUI_UNLIKELY(next->bold | next->dim)) {
+     if (FTXUI_UNLIKELY(next->style.bold | next->style.dim)) {
        // BOLD_AND_DIM_RESET:
-       ss << (next->bold ? "\x1B[1m" : "");  // BOLD_SET
-       ss << (next->dim ? "\x1B[2m" : "");   // DIM_SET
+       ss << (next->style.bold ? "\x1B[1m" : "");  // BOLD_SET
+       ss << (next->style.dim ? "\x1B[2m" : "");   // DIM_SET
      }
 
      // Underline
-     if (FTXUI_UNLIKELY(next->underlined != 0 ||
-                        next->underlined_double != 0)) {
-       ss << (next->underlined          ? "\x1B[4m"     // UNDERLINE
-              : next->underlined_double ? "\x1B[21m"    // UNDERLINE_DOUBLE
+     if (FTXUI_UNLIKELY(next->style.underlined != 0 ||
+                        next->style.underlined_double != 0)) {
+       ss << (next->style.underlined          ? "\x1B[4m"     // UNDERLINE
+              : next->style.underlined_double ? "\x1B[21m"    // UNDERLINE_DOUBLE
                                        : "\x1B[24m");  // UNDERLINE_RESET
      }
 
      // Blink
-     if (FTXUI_UNLIKELY(next->blink != 0)) {
-       ss << (next->blink ? "\x1B[5m"     // BLINK_SET
+     if (FTXUI_UNLIKELY(next->style.blink != 0)) {
+       ss << (next->style.blink ? "\x1B[5m"     // BLINK_SET
                          : "\x1B[25m");  // BLINK_RESET
      }
 
      // Inverted
-     if (FTXUI_UNLIKELY(next->inverted != 0)) {
-       ss << (next->inverted ? "\x1B[7m"     // INVERTED_SET
+     if (FTXUI_UNLIKELY(next->style.inverted != 0)) {
+       ss << (next->style.inverted ? "\x1B[7m"     // INVERTED_SET
                             : "\x1B[27m");  // INVERTED_RESET
      }
 
      // Italics
-     if (FTXUI_UNLIKELY(next->italic != 0)) {
-       ss << (next->italic ? "\x1B[3m"     // ITALIC_SET
+     if (FTXUI_UNLIKELY(next->style.italic != 0)) {
+       ss << (next->style.italic ? "\x1B[3m"     // ITALIC_SET
                           : "\x1B[23m");  // ITALIC_RESET
      }
 
      // StrikeThrough
-     if (FTXUI_UNLIKELY(next->strikethrough != 0)) {
-       ss << (next->strikethrough ? "\x1B[9m"     // CROSSED_OUT
+     if (FTXUI_UNLIKELY(next->style.strikethrough != 0)) {
+       ss << (next->style.strikethrough ? "\x1B[9m"     // CROSSED_OUT
                                  : "\x1B[29m");  // CROSSED_OUT_RESET
      }
 
-     if (FTXUI_UNLIKELY(next->foreground_color != Color(Color::Default) ||
-                        next->background_color != Color(Color::Default))) {
-       ss << "\x1B[" + next->foreground_color.Print(false) + "m";
-       ss << "\x1B[" + next->background_color.Print(true) + "m";
+     if (FTXUI_UNLIKELY(next->style.foreground_color != Color(Color::Default) ||
+                        next->style.background_color != Color(Color::Default))) {
+       ss << "\x1B[" + next->style.foreground_color.Print(false) + "m";
+       ss << "\x1B[" + next->style.background_color.Print(true) + "m";
      }
      return;
    }
 
   // See https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
-  if (FTXUI_UNLIKELY(next->hyperlink != prev->hyperlink)) {
-    ss << "\x1B]8;;" << screen->Hyperlink(next->hyperlink) << "\x1B\\";
+  if (FTXUI_UNLIKELY(next->style.hyperlink != prev->style.hyperlink)) {
+    ss << "\x1B]8;;" << screen->Hyperlink(next->style.hyperlink) << "\x1B\\";
   }
 
   // Bold
-  if (FTXUI_UNLIKELY((next->bold ^ prev->bold) | (next->dim ^ prev->dim))) {
+  if (FTXUI_UNLIKELY((next->style.bold ^ prev->style.bold) | (next->style.dim ^ prev->style.dim))) {
     // BOLD_AND_DIM_RESET:
-    ss << ((prev->bold && !next->bold) || (prev->dim && !next->dim) ? "\x1B[22m"
+    ss << ((prev->style.bold && !next->style.bold) || (prev->style.dim && !next->style.dim) ? "\x1B[22m"
                                                                 : "");
-    ss << (next->bold ? "\x1B[1m" : "");  // BOLD_SET
-    ss << (next->dim ? "\x1B[2m" : "");   // DIM_SET
+    ss << (next->style.bold ? "\x1B[1m" : "");  // BOLD_SET
+    ss << (next->style.dim ? "\x1B[2m" : "");   // DIM_SET
   }
 
   // Underline
-  if (FTXUI_UNLIKELY(next->underlined != prev->underlined ||
-                     next->underlined_double != prev->underlined_double)) {
-    ss << (next->underlined          ? "\x1B[4m"     // UNDERLINE
-           : next->underlined_double ? "\x1B[21m"    // UNDERLINE_DOUBLE
+  if (FTXUI_UNLIKELY(next->style.underlined != prev->style.underlined ||
+                     next->style.underlined_double != prev->style.underlined_double)) {
+    ss << (next->style.underlined          ? "\x1B[4m"     // UNDERLINE
+           : next->style.underlined_double ? "\x1B[21m"    // UNDERLINE_DOUBLE
                                     : "\x1B[24m");  // UNDERLINE_RESET
   }
 
   // Blink
-  if (FTXUI_UNLIKELY(next->blink != prev->blink)) {
-    ss << (next->blink ? "\x1B[5m"     // BLINK_SET
+  if (FTXUI_UNLIKELY(next->style.blink != prev->style.blink)) {
+    ss << (next->style.blink ? "\x1B[5m"     // BLINK_SET
                       : "\x1B[25m");  // BLINK_RESET
   }
 
   // Inverted
-  if (FTXUI_UNLIKELY(next->inverted != prev->inverted)) {
-    ss << (next->inverted ? "\x1B[7m"     // INVERTED_SET
+  if (FTXUI_UNLIKELY(next->style.inverted != prev->style.inverted)) {
+    ss << (next->style.inverted ? "\x1B[7m"     // INVERTED_SET
                          : "\x1B[27m");  // INVERTED_RESET
   }
 
   // Italics
-  if (FTXUI_UNLIKELY(next->italic != prev->italic)) {
-    ss << (next->italic ? "\x1B[3m"     // ITALIC_SET
+  if (FTXUI_UNLIKELY(next->style.italic != prev->style.italic)) {
+    ss << (next->style.italic ? "\x1B[3m"     // ITALIC_SET
                        : "\x1B[23m");  // ITALIC_RESET
   }
 
   // StrikeThrough
-  if (FTXUI_UNLIKELY(next->strikethrough != prev->strikethrough)) {
-    ss << (next->strikethrough ? "\x1B[9m"     // CROSSED_OUT
+  if (FTXUI_UNLIKELY(next->style.strikethrough != prev->style.strikethrough)) {
+    ss << (next->style.strikethrough ? "\x1B[9m"     // CROSSED_OUT
                               : "\x1B[29m");  // CROSSED_OUT_RESET
   }
 
-  if (FTXUI_UNLIKELY(next->foreground_color != prev->foreground_color ||
-                     next->background_color != prev->background_color)) {
-    ss << "\x1B[" + next->foreground_color.Print(false) + "m";
-    ss << "\x1B[" + next->background_color.Print(true) + "m";
+  if (FTXUI_UNLIKELY(next->style.foreground_color != prev->style.foreground_color ||
+                     next->style.background_color != prev->style.background_color)) {
+    ss << "\x1B[" + next->style.foreground_color.Print(false) + "m";
+    ss << "\x1B[" + next->style.background_color.Print(true) + "m";
   }
 }
 
@@ -250,7 +251,7 @@ struct TileEncoding {
 };
 
 // clang-format off
-const std::map<std::string_view, TileEncoding> tile_encoding = { // NOLINT
+const std::unordered_map<PackedString, TileEncoding> tile_encoding = { // NOLINT
     {"─", {1, 0, 1, 0, 0}},
     {"━", {2, 0, 2, 0, 0}},
     {"╍", {2, 0, 2, 0, 0}},
@@ -394,7 +395,7 @@ const std::map<std::string_view, TileEncoding> tile_encoding = { // NOLINT
 // clang-format on
 
 template <class A, class B>
-std::map<B, A> InvertMap(const std::map<A, B> input) {
+std::map<B, A> InvertMap(const std::unordered_map<A, B> input) {
   std::map<B, A> output;
   for (const auto& it : input) {
     output[it.second] = it.first;
@@ -402,12 +403,8 @@ std::map<B, A> InvertMap(const std::map<A, B> input) {
   return output;
 }
 
-const std::map<TileEncoding, std::string_view> tile_encoding_inverse =  // NOLINT
+const std::map<TileEncoding, PackedString> tile_encoding_inverse =  // NOLINT
     InvertMap(tile_encoding);
-
-bool ShouldAttemptAutoMerge(Pixel& pixel) {
-  return pixel.automerge && pixel.get_grapheme().size() == 3;
-}
 
 }  // namespace
 
@@ -450,22 +447,22 @@ Screen::Screen(int dimx, int dimy) : Image{dimx, dimy} {
 #endif
 }
 
+// @attention assumes both pixels are small
 void Screen::UpgradeLeftRight(Pixel& left, Pixel& right) {
-  const auto it_left = tile_encoding.find(left.get_grapheme());
-  if (it_left == tile_encoding.end()) {
+  const auto it_left = tile_encoding.find(left.grapheme);
+  if (it_left == tile_encoding.end())
     return;
-  }
-  const auto it_right = tile_encoding.find(right.get_grapheme());
-  if (it_right == tile_encoding.end()) {
+
+  const auto it_right = tile_encoding.find(right.grapheme);
+  if (it_right == tile_encoding.end())
     return;
-  }
 
   if (it_left->second.right == 0 && it_right->second.left != 0) {
     TileEncoding encoding_left = it_left->second;
     encoding_left.right = it_right->second.left;
     const auto it_left_upgrade = tile_encoding_inverse.find(encoding_left);
     if (it_left_upgrade != tile_encoding_inverse.end()) {
-      left.set_grapheme(it_left_upgrade->second, *this);
+      left.grapheme = it_left_upgrade->second;
     }
   }
 
@@ -474,27 +471,27 @@ void Screen::UpgradeLeftRight(Pixel& left, Pixel& right) {
     encoding_right.left = it_left->second.right;
     const auto it_right_upgrade = tile_encoding_inverse.find(encoding_right);
     if (it_right_upgrade != tile_encoding_inverse.end()) {
-      right.set_grapheme(it_right_upgrade->second, *this);
+      right.grapheme = it_right_upgrade->second;
     }
   }
 }
 
+// @attention assumes both pixels are small
 void Screen::UpgradeTopDown(Pixel& top, Pixel& down) {
-  const auto it_top = tile_encoding.find(top.get_grapheme());
-  if (it_top == tile_encoding.end()) {
+  const auto it_top = tile_encoding.find(top.grapheme);
+  if (it_top == tile_encoding.end())
     return;
-  }
-  const auto it_down = tile_encoding.find(down.get_grapheme());
-  if (it_down == tile_encoding.end()) {
+
+  const auto it_down = tile_encoding.find(down.grapheme);
+  if (it_down == tile_encoding.end())
     return;
-  }
 
   if (it_top->second.down == 0 && it_down->second.top != 0) {
     TileEncoding encoding_top = it_top->second;
     encoding_top.down = it_down->second.top;
     const auto it_top_down = tile_encoding_inverse.find(encoding_top);
     if (it_top_down != tile_encoding_inverse.end()) {
-      top.set_grapheme(it_top_down->second, *this);
+      top.grapheme = it_top_down->second;
     }
   }
 
@@ -503,7 +500,7 @@ void Screen::UpgradeTopDown(Pixel& top, Pixel& down) {
     encoding_down.top = it_top->second.down;
     const auto it_down_top = tile_encoding_inverse.find(encoding_down);
     if (it_down_top != tile_encoding_inverse.end()) {
-      down.set_grapheme(it_down_top->second, *this);
+      down.grapheme = it_down_top->second;
     }
   }
 }
@@ -531,13 +528,13 @@ std::string Screen::ToString() const {
       if (!previous_fullwidth) {
         UpdatePixelStyle(this, ss, previous_pixel_ref, pixel);
         previous_pixel_ref = pixel;
-        if (pixel->get_grapheme().empty()) {
-          ss << " ";
+        if (pixel->grapheme.empty()) {
+          ss << ' ';
         } else {
-          ss << pixel->get_grapheme();
+          ss << pixel->grapheme.get_view(pool_);
         }
       }
-      previous_fullwidth = (string_width(pixel->get_grapheme()) == 2);
+      previous_fullwidth = (string_width(pixel->grapheme.get_view(pool_)) == 2);
     }
   }
 
@@ -603,27 +600,42 @@ void Screen::Clear() {
 
 // clang-format off
 void Screen::ApplyShader() {
-  // Merge box characters togethers.
-  for (int y = 0; y < dimy_; ++y) {
+  // Merge box characters together
+  Pixel* data = pixels_.data() + 1;
+
+  for (int x = 1; x < dimx_; ++x) {
+     // Box drawing character uses exactly 3 byte.
+     if (!data->ShouldAttemptAutoMerge()) {
+        ++data;
+        continue;
+     }
+
+     Pixel* left = data - 1;
+     if (left->ShouldAttemptAutoMerge())
+        UpgradeLeftRight(*left, *data);
+
+     ++data;
+  }
+
+  for (int y = 1; y < dimy_; ++y) {
     for (int x = 0; x < dimx_; ++x) {
       // Box drawing character uses exactly 3 byte.
-      Pixel& cur = pixels_[x + y * dimx_];
-      if (!ShouldAttemptAutoMerge(cur)) {
+      if (!data->ShouldAttemptAutoMerge()) {
+        ++data;
         continue;
       }
 
       if (x > 0) {
-        Pixel& left = pixels_[x-1 + y * dimx_];
-        if (ShouldAttemptAutoMerge(left)) {
-          UpgradeLeftRight(left, cur);
-        }
+        Pixel* left = data - 1;
+        if (left->ShouldAttemptAutoMerge())
+          UpgradeLeftRight(*left, *data);
       }
-      if (y > 0) {
-        Pixel& top = pixels_[x + (y-1) * dimx_];
-        if (ShouldAttemptAutoMerge(top)) {
-          UpgradeTopDown(top, cur);
-        }
-      }
+
+      Pixel* top = data - dimx_;
+      if (top->ShouldAttemptAutoMerge())
+         UpgradeTopDown(*top, *data);
+
+      ++data;
     }
   }
 }

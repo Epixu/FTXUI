@@ -13,7 +13,7 @@ namespace ftxui {
 
 class Image;
 
-struct PixelBase
+struct PixelStyle
 {
    // A bit field representing the style:
    union {
@@ -54,8 +54,14 @@ struct PixelBase
 /// @detail This pixel is not embedded, and owns its character data 
 ///         (it's just the old Pixel implementation)
 /// @ingroup screen
-struct PixelStandalone : PixelBase {
+struct PixelStandalone {
   std::string grapheme;
+  PixelStyle  style;
+
+  FTXUI_FORCE_INLINE()
+  std::string_view get_view() const {
+     return grapheme;
+  }
 };
 
 
@@ -63,13 +69,36 @@ struct PixelStandalone : PixelBase {
 /// @detail This is an embedded pixel, the real character data is either packed if small
 ///         or contained in the Image producing the pixel
 /// @ingroup screen
-struct Pixel : PixelBase {
+struct Pixel {
   // The graphemes stored into the pixel. To support combining characters,
   // like: a?, this can potentially contain multiple codepoints.
   // The pixel itself however doesn't have ownership over the characters to
   // avoid lots of small allocations, instead it only interfaces the main string
   // inside an image or uses small-value-optimization.
   PackedString grapheme;
+  PixelStyle   style;
+
+  FTXUI_FORCE_INLINE()
+  void copy(const Pixel& rhs, PackedString::Pool& to_pool, const PackedString::Pool& from_pool) {
+     style = rhs.style;
+     grapheme.copy(rhs.get_view(from_pool), to_pool);
+  }
+
+  FTXUI_FORCE_INLINE()
+  void copy(const PixelStandalone& rhs, PackedString::Pool& to_pool) {
+     style = rhs.style;
+     grapheme.copy(rhs.get_view(), to_pool);
+  }
+
+  FTXUI_FORCE_INLINE()
+  std::string_view get_view(const PackedString::Pool& pool) const {
+     return grapheme.get_view(pool);
+  }
+
+  FTXUI_FORCE_INLINE()
+  bool ShouldAttemptAutoMerge() const {
+     return style.automerge && grapheme.get_size() == 3 && grapheme.is_small();
+  }
 };
 
 }  // namespace ftxui

@@ -88,26 +88,26 @@ class Border : public Node {
       return;
     }
 
-    screen.PixelAt(box_.x_min, box_.y_min).set_grapheme(charset_[0], screen);  // NOLINT
-    screen.PixelAt(box_.x_max, box_.y_min).set_grapheme(charset_[1], screen);  // NOLINT
-    screen.PixelAt(box_.x_min, box_.y_max).set_grapheme(charset_[2], screen);  // NOLINT
-    screen.PixelAt(box_.x_max, box_.y_max).set_grapheme(charset_[3], screen);  // NOLINT
+    screen.PixelAt(box_.x_min, box_.y_min).grapheme = charset_[0];  // NOLINT
+    screen.PixelAt(box_.x_max, box_.y_min).grapheme = charset_[1];  // NOLINT
+    screen.PixelAt(box_.x_min, box_.y_max).grapheme = charset_[2];  // NOLINT
+    screen.PixelAt(box_.x_max, box_.y_max).grapheme = charset_[3];  // NOLINT
 
     for (int x = box_.x_min + 1; x < box_.x_max; ++x) {
       Pixel& p1 = screen.PixelAt(x, box_.y_min);
       Pixel& p2 = screen.PixelAt(x, box_.y_max);
-      p1.set_grapheme(charset_[4], screen);  // NOLINT
-      p2.set_grapheme(charset_[4], screen);  // NOLINT
-      p1.automerge = true;
-      p2.automerge = true;
+      p1.grapheme = charset_[4];  // NOLINT
+      p2.grapheme = charset_[4];  // NOLINT
+      p1.style.automerge = true;
+      p2.style.automerge = true;
     }
     for (int y = box_.y_min + 1; y < box_.y_max; ++y) {
       Pixel& p3 = screen.PixelAt(box_.x_min, y);
       Pixel& p4 = screen.PixelAt(box_.x_max, y);
-      p3.set_grapheme(charset_[5], screen);  // NOLINT
-      p4.set_grapheme(charset_[5], screen);  // NOLINT
-      p3.automerge = true;
-      p4.automerge = true;
+      p3.grapheme = charset_[5];  // NOLINT
+      p4.grapheme = charset_[5];  // NOLINT
+      p3.style.automerge = true;
+      p4.style.automerge = true;
     }
 
     // Draw title.
@@ -118,12 +118,12 @@ class Border : public Node {
     // Draw the border color.
     if (foreground_color_) {
       for (int x = box_.x_min; x <= box_.x_max; ++x) {
-        screen.PixelAt(x, box_.y_min).foreground_color = *foreground_color_;
-        screen.PixelAt(x, box_.y_max).foreground_color = *foreground_color_;
+        screen.PixelAt(x, box_.y_min).style.foreground_color = *foreground_color_;
+        screen.PixelAt(x, box_.y_max).style.foreground_color = *foreground_color_;
       }
       for (int y = box_.y_min; y <= box_.y_max; ++y) {
-        screen.PixelAt(box_.x_min, y).foreground_color = *foreground_color_;
-        screen.PixelAt(box_.x_max, y).foreground_color = *foreground_color_;
+        screen.PixelAt(box_.x_min, y).style.foreground_color = *foreground_color_;
+        screen.PixelAt(box_.x_max, y).style.foreground_color = *foreground_color_;
       }
     }
   }
@@ -173,22 +173,21 @@ class BorderPixel : public Node {
     children_[0]->Render(screen);
 
     // Draw the border.
-    if (box_.x_min >= box_.x_max || box_.y_min >= box_.y_max) {
+    if (box_.x_min >= box_.x_max || box_.y_min >= box_.y_max)
       return;
-    }
 
-    screen.PixelAt(box_.x_min, box_.y_min).copy_pixel_data(pixel_, screen);
-    screen.PixelAt(box_.x_max, box_.y_min).copy_pixel_data(pixel_, screen);
-    screen.PixelAt(box_.x_min, box_.y_max).copy_pixel_data(pixel_, screen);
-    screen.PixelAt(box_.x_max, box_.y_max).copy_pixel_data(pixel_, screen);
+    screen.PixelAt(box_.x_min, box_.y_min).copy(pixel_, screen.get_pool());
+    screen.PixelAt(box_.x_max, box_.y_min).copy(pixel_, screen.get_pool());
+    screen.PixelAt(box_.x_min, box_.y_max).copy(pixel_, screen.get_pool());
+    screen.PixelAt(box_.x_max, box_.y_max).copy(pixel_, screen.get_pool());
 
     for (int x = box_.x_min + 1; x < box_.x_max; ++x) {
-      screen.PixelAt(x, box_.y_min).copy_pixel_data(pixel_, screen);
-      screen.PixelAt(x, box_.y_max).copy_pixel_data(pixel_, screen);
+      screen.PixelAt(x, box_.y_min).copy(pixel_, screen.get_pool());
+      screen.PixelAt(x, box_.y_max).copy(pixel_, screen.get_pool());
     }
     for (int y = box_.y_min + 1; y < box_.y_max; ++y) {
-      screen.PixelAt(box_.x_min, y).copy_pixel_data(pixel_, screen);
-      screen.PixelAt(box_.x_max, y).copy_pixel_data(pixel_, screen);
+      screen.PixelAt(box_.x_min, y).copy(pixel_, screen.get_pool());
+      screen.PixelAt(box_.x_max, y).copy(pixel_, screen.get_pool());
     }
   }
 };

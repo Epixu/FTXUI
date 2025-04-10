@@ -72,28 +72,30 @@ class DBox : public Node {
       for (int y = y_min; y < y_max; ++y) {
         for (int x = x_min; x < x_max; ++x) { // iterate x as inner for cache-friendliness
           auto& pixel = screen.PixelAt(x, y);
-          acc->background_color = Color::Blend(acc->background_color, pixel.background_color);
-          acc->automerge = pixel.automerge || acc->automerge;
+          acc->style.background_color = Color::Blend(acc->style.background_color, pixel.style.background_color);
+          acc->style.automerge = pixel.style.automerge || acc->style.automerge;
 
           if (pixel.grapheme.empty()) {
-            acc->foreground_color = Color::Blend(acc->foreground_color, pixel.background_color); //TODO graphemes are never empty() currently. this can be fixed by a custom string_view class that allows for size() == 0 without resetting the data() pointer
+            acc->style.foreground_color = Color::Blend(acc->style.foreground_color, pixel.style.background_color);
           } else {
-            acc->blink = pixel.blink;
-            acc->bold = pixel.bold;
-            acc->dim = pixel.dim;
-            acc->inverted = pixel.inverted;
-            acc->italic = pixel.italic;
-            acc->underlined = pixel.underlined;
-            acc->underlined_double = pixel.underlined_double;
-            acc->strikethrough = pixel.strikethrough;
-            acc->hyperlink = pixel.hyperlink;
-            acc->set_grapheme(pixel.get_grapheme(), pixels);
-            acc->foreground_color = pixel.foreground_color;
+            acc->style.blink = pixel.style.blink;
+            acc->style.bold = pixel.style.bold;
+            acc->style.dim = pixel.style.dim;
+            acc->style.inverted = pixel.style.inverted;
+            acc->style.italic = pixel.style.italic;
+            acc->style.underlined = pixel.style.underlined;
+            acc->style.underlined_double = pixel.style.underlined_double;
+            acc->style.strikethrough = pixel.style.strikethrough;
+
+            acc->style.hyperlink = pixel.style.hyperlink;
+            acc->style.foreground_color = pixel.style.foreground_color;
+
+            acc->grapheme.copy(pixel.get_view(screen.get_pool()), pixels.get_pool());
           }
 
           ++acc;  // NOLINT
 
-          pixel.reset(); //TODO no longer makes grapheme empty, but instead does ' '
+          pixel = Pixel {};
         }
       }
     }
@@ -102,7 +104,7 @@ class DBox : public Node {
     Pixel* acc = pixels.get_pixels().data();
     for (int y = y_min; y < y_max; ++y) {
        for (int x = x_min; x < x_max; ++x) {
-          screen.PixelAt(x_min, y).copy_pixel_data(*acc, screen); // NOLINT
+          screen.PixelAt(x_min, y).copy(*acc, screen.get_pool(), pixels.get_pool()); // NOLINT
           ++acc;
        }
     }
